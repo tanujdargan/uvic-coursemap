@@ -28,7 +28,6 @@ export default function ExplorePage() {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const [progressValue, setProgressValue] = useState(0);
   const [terms, setTerms] = useState([]);
   const [selectedTerm, setSelectedTerm] = useState('');
 
@@ -58,8 +57,10 @@ export default function ExplorePage() {
       const uniqueTerms = Array.from(new Set(data.map((course) => course.term)));
       uniqueTerms.sort();
       setTerms(uniqueTerms);
+      
+      // Set the default selected term to the first available term
       setSelectedTerm(uniqueTerms[0] || '');
-
+      
       // Group courses
       const grouped = groupCoursesBySubjectAndNumber(data);
       setGroupedCourses(grouped);
@@ -68,20 +69,6 @@ export default function ExplorePage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    let interval;
-    if (loading) {
-      interval = setInterval(() => {
-        setProgressValue((prev) => (prev >= 100 ? 0 : prev + 10));
-      }, 100);
-    }
-    return () => clearInterval(interval);
-  }, [loading]);
-
-  const handleCourseClick = (course) => {
-    setSelectedCourse(course);
   };
 
   // Search and filter logic
@@ -106,7 +93,7 @@ export default function ExplorePage() {
       <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
         <div className="w-2/3">
           <p className="mb-4 text-center text-xl">Loading courses...</p>
-          <Progress value={progressValue} className="w-full bg-gray-800" />
+          <Progress value={100} className="w-full bg-gray-800" /> {/* Static progress bar */}
         </div>
       </div>
     );
@@ -168,7 +155,7 @@ export default function ExplorePage() {
             </Accordion>
           </ScrollArea>
         </div>
-        <div className="w-2/3 p-4">
+        <div className="w-2/3 p-4 overflow-y-auto h-full"> {/* Added overflow-y-auto and h-full */}
           {selectedCourse ? (
             <div>
               <h2 className="text-2xl font-bold mb-4">
@@ -211,8 +198,30 @@ export default function ExplorePage() {
 }
 
 // Helper function to group courses
-function groupCoursesBySubjectAndNumber(courses) {
-  const grouped = {};
+// Define a type for the course object
+type Course = {
+  subject: string;
+  course_number: number;
+  course_name: string;
+  sections: Array<{
+    term: number;
+    section: string;
+    frequency: string;
+    time: string;
+    days: string;
+    location: string;
+    date_range: string;
+    schedule_type: string;
+    instructor: string;
+    instructional_method: string;
+    units: number;
+    crn: number;
+  }>;
+};
+
+// Helper function to group courses
+function groupCoursesBySubjectAndNumber(courses: Course[]) {
+  const grouped: { [key: string]: Course } = {};
   courses.forEach((course) => {
     const key = `${course.subject}-${course.course_number}`;
     if (!grouped[key]) {
