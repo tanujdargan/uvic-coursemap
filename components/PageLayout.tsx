@@ -1,5 +1,5 @@
 import React from 'react'
-import TopBar from './TopBar'
+import TopBar from '../components/TopBar';
 
 interface PageLayoutProps {
   children: React.ReactNode

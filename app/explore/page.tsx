@@ -26,7 +26,7 @@ import {
   CardBody,
   CardFooter,
   Divider,
-} from '@nextui-org/react'; // Correctly import components from NextUI
+} from '@nextui-org/react';
 
 interface Section {
   term: number;
@@ -40,7 +40,7 @@ interface Section {
   days: string;
   location: string;
   date_range: string;
-  schedule_type: string; // Lecture, Lab, Tutorial, etc.
+  schedule_type: string;
   instructor: string;
   instructional_method: string;
   units: number;
@@ -67,6 +67,25 @@ export default function ExplorePage() {
   const [progressValue, setProgressValue] = useState<number>(0);
   const [terms, setTerms] = useState<number[]>([]);
   const [selectedTerm, setSelectedTerm] = useState<string>('');
+  const [isTabActive, setIsTabActive] = useState(true);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        document.title = "Stop Slacking!";
+        setIsTabActive(false);
+      } else {
+        document.title = "Explore Courses";
+        setIsTabActive(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     fetchCourses();
@@ -155,8 +174,9 @@ export default function ExplorePage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white">
+    <div className="flex flex-col h-screen bg-white-900 text-white">
       <TopBar />
+      <div className="border-b border-gray-800 mt-16"></div>
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <div className="w-1/3 border-r border-gray-800 flex flex-col">
@@ -212,77 +232,89 @@ export default function ExplorePage() {
           </ScrollArea>
         </div>
         {/* Main Content */}
-        <div className="w-2/3 p-4 overflow-y-auto h-full">
-          {selectedCourse ? (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">
-                {selectedCourse.subject} {selectedCourse.course_number}: {selectedCourse.course_name}
-              </h2>
-              {/* Display sections using Cards */}
-              {['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'].map((type) => {
-                const sectionsOfType = selectedCourse.sections
-                  .filter(
-                    (section) =>
-                      section.schedule_type === type &&
-                      (selectedTerm ? section.term === parseInt(selectedTerm) : true)
-                  )
-                  .sort((a, b) => a.section.localeCompare(b.section));
+        <div className="w-2/3 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-4">
+            {selectedCourse ? (
+              <div>
+                <h2 className="text-2xl font-bold mb-4">
+                  {selectedCourse.subject} {selectedCourse.course_number}: {selectedCourse.course_name}
+                </h2>
+                {/* Display sections using Cards */}
+                {['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'].map((type) => {
+                  const sectionsOfType = selectedCourse.sections
+                    .filter(
+                      (section) =>
+                        section.schedule_type === type &&
+                        (selectedTerm ? section.term === parseInt(selectedTerm) : true)
+                    )
+                    .sort((a, b) => a.section.localeCompare(b.section));
 
-                if (sectionsOfType.length === 0) return null;
+                  if (sectionsOfType.length === 0) return null;
 
-                return (
-                  <div key={type} className="mb-6">
-                    <h3 className="text-xl font-semibold mb-2">{type}s</h3>
-                    {sectionsOfType.map((section, index) => (
-                      <Card key={index} className="mb-4">
-                        <CardHeader className="flex gap-3">
-                          <div className="flex flex-col">
-                            <p className="text-md font-semibold">
-                              Section: {section.section} - {section.schedule_type}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              CRN: {section.crn} | Units: {section.units}
-                            </p>
-                          </div>
-                        </CardHeader>
-                        <Divider />
-                        <CardBody>
-                          <p>
-                            <strong>Instructor:</strong> {section.instructor}
-                          </p>
-                          <p>
-                            <strong>Instructional Method:</strong> {section.instructional_method}
-                          </p>
-                          <p>
-                            <strong>Time:</strong> {section.time} on {section.days}
-                          </p>
-                          <p>
-                            <strong>Location:</strong> {section.location}
-                          </p>
-                          <p>
-                            <strong>Date Range:</strong> {section.date_range}
-                          </p>
-                          <p>
-                            <strong>Frequency:</strong> {section.frequency}
-                          </p>
-                        </CardBody>
-                        <Divider />
-                        <CardFooter>
-                          <p className="text-sm text-gray-500">
-                            Term: {convertTermToString(section.term)}
-                          </p>
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-gray-500 text-xl">Select a course to view details</p>
-            </div>
-          )}
+                  return (
+                    <div key={type} className="mb-6">
+                      <h3 className="text-xl font-semibold mb-2">{type}s</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {sectionsOfType.map((section, index) => (
+                          <Card
+                            key={index}
+                            className="mb-4 bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg text-white"
+                            style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                          >
+                            <CardHeader className="flex items-center">
+                              <div className="flex flex-col">
+                                <p className="text-lg font-semibold">
+                                  Section: {section.section}
+                                </p>
+                                <p className="text-sm text-gray-300">
+                                  CRN: {section.crn} | Units: {section.units}
+                                </p>
+                             </div>
+                            </CardHeader>
+                            <Divider />
+                            <CardBody className="flex flex-wrap">
+                              <div className="w-1/2">
+                                <p>
+                                  <strong>Instructor:</strong> {section.instructor}
+                                </p>
+                                <p>
+                                  <strong>Method:</strong> {section.instructional_method}
+                                </p>
+                                <p>
+                                  <strong>Time:</strong> {section.time}
+                                </p>
+                              </div>
+                              <div className="w-1/2">
+                                <p>
+                                  <strong>Days:</strong> {section.days}
+                                </p>
+                                <p>
+                                  <strong>Location:</strong> {section.location}
+                                </p>
+                                <p>
+                                  <strong>Date Range:</strong> {section.date_range}
+                                </p>
+                              </div>
+                            </CardBody>
+                            <Divider />
+                            <CardFooter>
+                              <p className="text-sm text-gray-300">
+                                Term: {convertTermToString(section.term)}
+                              </p>
+                            </CardFooter>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-gray-500 text-xl">Select a course to view details</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
