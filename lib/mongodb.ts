@@ -1,7 +1,7 @@
 // lib/mongodb.ts
 import { MongoClient } from 'mongodb';
 
-const uri = process.env.MONGODB_URI; // Your MongoDB connection string
+const uri = process.env.MONGODB_URI || ''; // Ensure uri is always a string
 const options = {};
 
 let client;
