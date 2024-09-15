@@ -1,8 +1,6 @@
-// app/scheduler/page.tsx
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,33 +10,53 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import TopBar from '@/components/TopBar';
+import { Search } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { Card, CardContent } from '@/components/ui/card';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import {
+  Card,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  Divider,
+} from '@nextui-org/react';
+// Replaced SlideTabs with TopBar
+import TopBar from '../../components/TopBar';
+// Import Calendar component (assuming it exists)
+import { Calendar as BaseCalendar } from '@/components/ui/calendar';
+import { ComponentProps } from 'react';
+
+// Define a new Calendar type that includes selectedSections
+type CalendarProps = ComponentProps<typeof BaseCalendar> & { selectedSections?: Section[] };
+const Calendar = BaseCalendar as React.FC<CalendarProps>;
 
 interface Section {
   term: number;
   subject: string;
-  subjectName: string;
-  course_number: string;
   course_name: string;
+  course_number: number;
   crn: number;
   section: string;
+  frequency: string;
   time: string;
   days: string;
   location: string;
+  date_range: string;
   schedule_type: string;
   instructor: string;
+  instructional_method: string;
   units: number;
-  color: string; // For display purposes
 }
 
 interface Course {
   subject: string;
-  subjectName: string;
-  course_number: string;
+  course_number: number;
   course_name: string;
   sections: Section[];
 }
@@ -48,17 +66,16 @@ interface Subject {
   name: string;
 }
 
-export default function SchedulerPage() {
+export default function ScheduleBuilderPage() {
   const [groupedCourses, setGroupedCourses] = useState<Course[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [selectedSections, setSelectedSections] = useState<Section[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const { toast } = useToast();
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [progressValue, setProgressValue] = useState<number>(0);
-
-  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const timeSlots = Array.from({ length: 17 }, (_, i) => i + 7); // 7 AM to 11 PM
+  const [terms, setTerms] = useState<number[]>([]);
+  const [selectedTerm, setSelectedTerm] = useState<string>('');
+  const [selectedSections, setSelectedSections] = useState<Section[]>([]);
 
   useEffect(() => {
     fetchCourses();
@@ -74,19 +91,25 @@ export default function SchedulerPage() {
       const grouped = groupSectionsIntoCourses(data);
       setGroupedCourses(grouped);
 
-      // Extract unique subjects
-      const uniqueSubjects = Array.from(new Set(grouped.map(course => course.subject)));
+      // Extract unique subjects and sort them alphabetically
+      const uniqueSubjects = Array.from(new Set(grouped.map((course) => course.subject)));
       uniqueSubjects.sort();
 
       setSubjects(
-        uniqueSubjects.map(subjectId => {
-          const subjectName = grouped.find(course => course.subject === subjectId)?.subjectName || '';
-          return {
-            id: subjectId,
-            name: subjectName || subjectId,
-          };
-        })
+        uniqueSubjects.map((subject) => ({
+          id: subject,
+          name: subject,
+        }))
       );
+
+      // Extract unique terms
+      const uniqueTerms = Array.from(new Set(data.map((section) => section.term)));
+      uniqueTerms.sort((a, b) => b - a);
+
+      setTerms(uniqueTerms);
+
+      // Set the default selected term to the first available term
+      setSelectedTerm(uniqueTerms[0]?.toString() || '');
     } catch (error) {
       console.error('Error fetching courses:', error);
     } finally {
@@ -94,53 +117,55 @@ export default function SchedulerPage() {
     }
   };
 
+  // Handle course click
+  const handleCourseClick = (course: Course) => {
+    setSelectedCourse(course);
+  };
+
+  // Handle section selection
+  const handleSectionToggle = (section: Section) => {
+    setSelectedSections((prevSelected) => {
+      // Check if the section is already selected
+      const isSelected = prevSelected.some((s) => s.crn === section.crn);
+      if (isSelected) {
+        // Remove the section
+        return prevSelected.filter((s) => s.crn !== section.crn);
+      } else {
+        // Add the section
+        return [...prevSelected, section];
+      }
+    });
+  };
+
   // Loading animation for progress bar
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (loading) {
       interval = setInterval(() => {
-        setProgressValue(prev => (prev >= 100 ? 0 : prev + 10));
+        setProgressValue((prev) => (prev >= 100 ? 0 : prev + 10));
       }, 100);
     }
     return () => clearInterval(interval);
   }, [loading]);
 
-  const handleSectionClick = (section: Section) => {
-    const hasConflict = selectedSections.some(selectedSection => {
-      // Check for time conflicts
-      return (
-        selectedSection.days === section.days &&
-        selectedSection.time === section.time &&
-        selectedSection.schedule_type === section.schedule_type
-      );
-    });
+  // Search and filter logic
+  const searchWords = (searchTerm || '').toLowerCase().split(' ').filter(Boolean);
 
-    if (!hasConflict) {
-      setSelectedSections([...selectedSections, section]);
-      toast({
-        title: 'Section Added',
-        description: `${section.subject} ${section.course_number} - ${section.section} has been added to your schedule.`,
-      });
-    } else {
-      toast({
-        title: 'Time Conflict',
-        description: 'This section conflicts with your existing schedule.',
-        variant: 'destructive',
-      });
-    }
-  };
+  const filteredCourses = groupedCourses.filter((course) => {
+    const courseString = `${course.subject || ''} ${course.course_number || ''} ${course.course_name || ''}`.toLowerCase();
+    const matchesSearch = searchWords.every((word) => courseString.includes(word));
+    const matchesTerm = selectedTerm
+      ? course.sections.some((section) => section.term === parseInt(selectedTerm))
+      : true;
+    return matchesSearch && matchesTerm;
+  });
 
-  const removeSection = (sectionId: string) => {
-    setSelectedSections(selectedSections.filter(section => section.crn.toString() !== sectionId));
-    toast({
-      title: 'Section Removed',
-      description: 'The section has been removed from your schedule.',
-    });
-  };
+  const subjectIdsWithMatchingCourses = new Set(filteredCourses.map((course) => course.subject));
 
-  const filteredSubjects = subjects.filter(subject =>
-    subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    subject.id.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredSubjects = subjects.filter(
+    (subject) =>
+      (subject.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+      subjectIdsWithMatchingCourses.has(subject.id)
   );
 
   if (loading) {
@@ -157,9 +182,10 @@ export default function SchedulerPage() {
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-white">
       <TopBar />
+      <div className="border-b border-gray-800 mt-16"></div> {/* Separator line */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <div className="w-1/3 border-r border-gray-800 flex flex-col mt-16">
+        {/* Left Sidebar */}
+        <div className="w-1/4 border-r border-gray-800 flex flex-col">
           <div className="p-4 border-b border-gray-800">
             <div className="relative mb-4">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
@@ -171,41 +197,39 @@ export default function SchedulerPage() {
                 className="pl-8 bg-gray-800 border-gray-700 text-white"
               />
             </div>
+            <Select value={selectedTerm} onValueChange={(value) => setSelectedTerm(value)}>
+              <SelectTrigger className="w-full bg-gray-800 border-gray-700 text-white">
+                <SelectValue placeholder="Select a term" />
+              </SelectTrigger>
+              <SelectContent>
+                {terms.map((term) => (
+                  <SelectItem key={term} value={term.toString()}>
+                    {convertTermToString(term)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <ScrollArea className="flex-1">
-            <Accordion type="single" collapsible className="w-full">
-              {filteredSubjects.map(subject => (
+            <Accordion type="multiple" className="w-full">
+              {filteredSubjects.map((subject) => (
                 <AccordionItem key={subject.id} value={subject.id}>
                   <AccordionTrigger className="px-4 text-gray-300 hover:text-white">
                     {subject.name}
                   </AccordionTrigger>
                   <AccordionContent>
-                    {groupedCourses
-                      .filter(course => course.subject === subject.id)
-                      .sort((a, b) => {
-                        // Convert course_number to string if it's not already
-                        const aNum = String(a.course_number);
-                        const bNum = String(b.course_number);
-                        return aNum.localeCompare(bNum);
-                      })
-                      .map(course => (
-                        <div key={`${course.subject}-${course.course_number}`}>
-                          <div className="px-4 py-2 text-gray-200 font-semibold">
-                            {course.course_number}: {course.course_name}
-                          </div>
-                          {course.sections.map(section => (
-                            <Button
-                              key={section.crn}
-                              variant="ghost"
-                              className="w-full justify-start px-8 py-1 text-sm text-gray-300 hover:text-white"
-                              onClick={() => handleSectionClick(section)}
-                            >
-                              <div className="flex items-center">
-                                <span>Section {section.section} - {section.schedule_type}</span>
-                              </div>
-                            </Button>
-                          ))}
-                        </div>
+                    {filteredCourses
+                      .filter((course) => course.subject === subject.id)
+                      .sort((a, b) => a.course_number - b.course_number)
+                      .map((course) => (
+                        <Button
+                          key={`${course.subject}-${course.course_number}`}
+                          variant="ghost"
+                          className="w-full justify-start px-4 py-2 text-sm text-gray-300 hover:text-white"
+                          onClick={() => handleCourseClick(course)}
+                        >
+                          {course.subject} {course.course_number}: {course.course_name}
+                        </Button>
                       ))}
                   </AccordionContent>
                 </AccordionItem>
@@ -213,67 +237,63 @@ export default function SchedulerPage() {
             </Accordion>
           </ScrollArea>
         </div>
-        {/* Main Content */}
-        <main className="flex-1 p-6 overflow-auto mt-16">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardContent className="p-0">
-              <div className="flex justify-between items-center p-4 border-b border-gray-700">
-                <Button variant="ghost" size="icon">
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div className="text-lg font-semibold">Schedule</div>
-                <Button variant="ghost" size="icon">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="grid grid-cols-8 gap-px bg-gray-700">
-                <div></div>
-                {weekDays.map(day => (
-                  <div key={day} className="font-semibold text-center py-2 bg-gray-800">{day}</div>
-                ))}
-                {timeSlots.map(time => (
-                  <React.Fragment key={time}>
-                    <div className="text-right pr-2 py-2 text-sm text-gray-400 bg-gray-800">
-                      {`${time}:00`}
-                    </div>
-                    {weekDays.map(day => (
-                      <div key={`${day}-${time}`} className="bg-gray-800 relative h-20">
-                        {selectedSections.map(section => {
-                          // Check if the section should be displayed in this cell
-                          const sectionDays = section.days?.split('') || [];
-                          const dayInitial = day.charAt(0);
-                          const [startTime, endTime] = section.time?.split('-') || [];
-                          const sectionStartTime = startTime ? parseInt(startTime.split(':')[0]) : 0;
-                          const sectionEndTime = endTime ? parseInt(endTime.split(':')[0]) : 0;
+        {/* Center - Calendar */}
+        <div className="w-1/2 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-4">
+            {/* Calendar Component */}
+            <Calendar selectedSections={selectedSections} />
+          </div>
+        </div>
+        {/* Right Sidebar */}
+        <div className="w-1/4 border-l border-gray-800 p-4">
+          {selectedCourse ? (
+            <div className="flex flex-col h-full">
+              <h2 className="text-xl font-bold mb-4">
+                {selectedCourse.subject} {selectedCourse.course_number}
+              </h2>
+              <p className="mb-4">{selectedCourse.course_name}</p>
+              <ScrollArea className="flex-1">
+                {['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'].map((type) => {
+                  const sectionsOfType = selectedCourse.sections
+                    .filter(
+                      (section) =>
+                        section.schedule_type === type &&
+                        (selectedTerm ? section.term === parseInt(selectedTerm) : true)
+                    )
+                    .sort((a, b) => a.section.localeCompare(b.section));
 
-                          if (
-                            sectionDays.includes(dayInitial) &&
-                            time >= sectionStartTime &&
-                            time < sectionEndTime
-                          ) {
-                            return (
-                              <div
-                                key={section.crn}
-                                className={`absolute inset-0 m-px bg-indigo-600 bg-opacity-70 p-1 text-xs overflow-hidden cursor-pointer`}
-                                onClick={() => removeSection(section.crn.toString())}
-                              >
-                                <div className="font-semibold">
-                                  {section.subject} {section.course_number} - {section.section}
-                                </div>
-                                <div className="text-gray-200 truncate">{section.course_name}</div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        })}
-                      </div>
-                    ))}
-                  </React.Fragment>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </main>
+                  if (sectionsOfType.length === 0) return null;
+
+                  return (
+                    <div key={type} className="mb-4">
+                      <h3 className="text-lg font-semibold mb-2">{type}s</h3>
+                      {sectionsOfType.map((section, index) => {
+                        const isSelected = selectedSections.some((s) => s.crn === section.crn);
+                        return (
+                          <div key={index} className="flex items-center mb-2">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleSectionToggle(section)}
+                              className="mr-2"
+                            />
+                            <label className="flex-1">
+                              Section {section.section} - {section.days} {section.time}
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </ScrollArea>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-gray-500 text-xl">Select a course to view sections</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -288,7 +308,6 @@ function groupSectionsIntoCourses(sections: Section[]): Course[] {
     if (!coursesMap[key]) {
       coursesMap[key] = {
         subject: section.subject,
-        subjectName: section.subjectName,
         course_number: section.course_number,
         course_name: section.course_name,
         sections: [section],
@@ -299,4 +318,28 @@ function groupSectionsIntoCourses(sections: Section[]): Course[] {
   });
 
   return Object.values(coursesMap);
+}
+
+// Helper function to convert term codes to strings
+function convertTermToString(termCode: number): string {
+  const termStr = termCode.toString();
+  const year = termStr.substring(0, 4);
+  const semesterCode = termStr.substring(4);
+  let semester = '';
+
+  switch (semesterCode) {
+    case '01':
+      semester = 'Spring';
+      break;
+    case '05':
+      semester = 'Summer';
+      break;
+    case '09':
+      semester = 'Fall';
+      break;
+    default:
+      semester = 'Unknown';
+  }
+
+  return `${semester} ${year}`;
 }
