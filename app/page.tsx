@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import AnimatedBackground from '../components/animated-background'
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export default function Home() {
   return (
@@ -32,6 +34,9 @@ export default function Home() {
           </a>
         </p>
       </div>
+      <SpeedInsights />
+      <Analytics />
     </div>
+    
   )
 }
