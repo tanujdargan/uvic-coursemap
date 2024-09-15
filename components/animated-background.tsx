@@ -32,6 +32,10 @@ const AnimatedBackground: React.FC = () => {
     }
 
     function animate() {
+      const canvas = canvasRef.current;
+      if (!canvas) return; // Add this null check
+
+      const ctx = canvas.getContext('2d')!;
       ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
