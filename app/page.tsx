@@ -8,14 +8,11 @@ import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from 'react';
 
 export default function Home() {
-  const [isTabActive, setIsTabActive] = useState(true);
   const [videoSource, setVideoSource] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    // Function to determine the video source based on screen size
     const determineVideoSource = () => {
-      // Example check: use window width to differentiate between mobile and desktop
       if (window.innerWidth <= 768) {
         setVideoSource('./CourseMap-phone.mp4');
       } else {
@@ -26,41 +23,24 @@ export default function Home() {
     // Initial determination
     determineVideoSource();
 
-    // Attempt to play the video
-    const playVideo = () => {
-      if (videoRef.current) {
-        videoRef.current.play().catch(error => {
-          console.error("Error playing video:", error);
-        });
-      }
-    };
+    // Create ResizeObserver
+    const resizeObserver = new ResizeObserver(() => {
+      determineVideoSource();
+    });
 
-    // Play video when source is set and component mounts
-    if (videoSource) {
-      playVideo();
-    }
+    // Observe the document body
+    resizeObserver.observe(document.body);
 
-    // Update video source on window resize
-    window.addEventListener('resize', determineVideoSource);
-
-    // Handle tab visibility change
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        document.title = "Stop Slacking!";
-        setIsTabActive(false);
-      } else {
-        document.title = "Explore Courses";
-        setIsTabActive(true);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Cleanup event listeners on component unmount
+    // Cleanup
     return () => {
-      window.removeEventListener('resize', determineVideoSource);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      resizeObserver.disconnect();
     };
+  }, []);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.load();
+    }
   }, [videoSource]);
 
   return (
