@@ -5,12 +5,45 @@ import TopBar from '../components/TopBar';
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { motion } from "framer-motion";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function Home() {
   const [isTabActive, setIsTabActive] = useState(true);
+  const [videoSource, setVideoSource] = useState('');
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    // Function to determine the video source based on screen size
+    const determineVideoSource = () => {
+      // Example check: use window width to differentiate between mobile and desktop
+      if (window.innerWidth <= 768) {
+        setVideoSource('./CourseMap-phone.mp4');
+      } else {
+        setVideoSource('./CourseMap.mp4');
+      }
+    };
+
+    // Initial determination
+    determineVideoSource();
+
+    // Attempt to play the video
+    const playVideo = () => {
+      if (videoRef.current) {
+        videoRef.current.play().catch(error => {
+          console.error("Error playing video:", error);
+        });
+      }
+    };
+
+    // Play video when source is set and component mounts
+    if (videoSource) {
+      playVideo();
+    }
+
+    // Update video source on window resize
+    window.addEventListener('resize', determineVideoSource);
+
+    // Handle tab visibility change
     const handleVisibilityChange = () => {
       if (document.hidden) {
         document.title = "Stop Slacking!";
@@ -23,51 +56,38 @@ export default function Home() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    // Cleanup event listeners on component unmount
     return () => {
+      window.removeEventListener('resize', determineVideoSource);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [videoSource]);
+
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-black">
       <motion.div initial="hidden" animate="visible" variants={{
-        hidden: {opacity: 0 },
-        visible: {opacity: 1, transition: { delay: 0.1 } }
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { delay: 0.1 } }
       }}>
-      <div className="black-tint"></div>
-      <div className="absolute inset-0 z-0">
-        <div className="gradient-bg">
-          <svg xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <filter id="goo">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
-                <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -8" result="goo" />
-                <feBlend in="SourceGraphic" in2="goo" />
-              </filter>
-            </defs>
-          </svg>
-          <div className="gradients-container">
-            <div className="g1"></div>
-            <div className="g2"></div>
-            <div className="g3"></div>
-            <div className="g4"></div>
-            <div className="g5"></div>
-            <div className="interactive"></div>
-          </div>
-        </div>
+      <div className="video-bg">
+        {videoSource && (
+          <video 
+            ref={videoRef}
+            autoPlay 
+            loop 
+            muted 
+            playsInline
+            className="object-cover w-full h-full"
+          >
+            <source src={videoSource} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        )}
       </div>
-  
-        <TopBar />
+      <TopBar />
       </motion.div>
       <div className="flex-grow flex items-center justify-center">
-        <div className="z-10 text-center">
-        <motion.div initial="hidden" animate="visible" variants={{
-            hidden: { opacity: 0},
-            visible: { opacity: 1}
-          }}>
-            <h1 className="text-8xl font-bold text-white mb-8">
-              CourseMap
-            </h1>
-          </motion.div>
+        <div className="z-10 text-center mt-32">
           <motion.div initial="hidden" animate="visible" variants={{
             hidden: { opacity: 0, y: -50 },
             visible: { opacity: 1, y: 0 }
