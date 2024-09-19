@@ -1,3 +1,5 @@
+// app/schedule-builder/page.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,23 +21,27 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
-  Divider,
-} from '@nextui-org/react';
-// Replaced SlideTabs with TopBar
 import TopBar from '../../components/TopBar';
-// Import Calendar component (assuming it exists)
-import { Calendar as BaseCalendar } from '@/components/ui/calendar';
-import { ComponentProps } from 'react';
 
-// Define a new Calendar type that includes selectedSections
-type CalendarProps = ComponentProps<typeof BaseCalendar> & { selectedSections?: Section[] };
-const Calendar = BaseCalendar as React.FC<CalendarProps>;
+// Import NextUI RadioGroup components
+import { RadioGroup, Radio } from '@nextui-org/react';
 
+// Import Sonner for toast notifications
+import { Toaster, toast } from 'sonner';
+
+// Import FullCalendar and necessary plugins
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+
+// Import FullCalendar styles
+// import '@fullcalendar/daygrid/main.css';
+// import '@fullcalendar/timegrid/main.css';
+
+// // Import global CSS
+// import '@/styles/global.css';
+
+// Interfaces
 interface Section {
   term: number;
   subject: string;
@@ -76,6 +82,9 @@ export default function ScheduleBuilderPage() {
   const [terms, setTerms] = useState<number[]>([]);
   const [selectedTerm, setSelectedTerm] = useState<string>('');
   const [selectedSections, setSelectedSections] = useState<Section[]>([]);
+  const [selectedSectionsByType, setSelectedSectionsByType] = useState<{
+    [type: string]: Section | null;
+  }>({});
 
   useEffect(() => {
     fetchCourses();
@@ -104,12 +113,15 @@ export default function ScheduleBuilderPage() {
 
       // Extract unique terms
       const uniqueTerms = Array.from(new Set(data.map((section) => section.term)));
-      uniqueTerms.sort((a, b) => b - a);
+      uniqueTerms.sort((a, b) => a - b); // Sort in ascending order
 
       setTerms(uniqueTerms);
 
-      // Set the default selected term to the first available term
-      setSelectedTerm(uniqueTerms[0]?.toString() || '');
+      // Select the closest upcoming term
+      const currentTermCode = getCurrentTermCode();
+      const currentTermIndex = uniqueTerms.findIndex((term) => term >= currentTermCode);
+      const defaultTermIndex = currentTermIndex !== -1 ? currentTermIndex : 0;
+      setSelectedTerm(uniqueTerms[defaultTermIndex]?.toString() || '');
     } catch (error) {
       console.error('Error fetching courses:', error);
     } finally {
@@ -120,21 +132,93 @@ export default function ScheduleBuilderPage() {
   // Handle course click
   const handleCourseClick = (course: Course) => {
     setSelectedCourse(course);
+
+    // Automatically select the first section of each type
+    const initialSelections: { [type: string]: Section } = {};
+
+    ['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'].forEach((type) => {
+      const sectionsOfType = course.sections
+        .filter((section) => section.schedule_type === type)
+        .sort((a, b) => a.section.localeCompare(b.section));
+
+      if (sectionsOfType.length > 0) {
+        initialSelections[type] = sectionsOfType[0];
+      }
+    });
+
+    setSelectedSectionsByType((prev) => ({
+      ...prev,
+      ...initialSelections,
+    }));
+
+    const newSelectedSections = Object.values(initialSelections);
+
+    setSelectedSections((prev) => {
+      // Remove previous selections of this course
+      const filteredPrev = prev.filter(
+        (s) => s.subject !== course.subject || s.course_number !== course.course_number
+      );
+
+      return [...filteredPrev, ...newSelectedSections];
+    });
   };
 
   // Handle section selection
-  const handleSectionToggle = (section: Section) => {
-    setSelectedSections((prevSelected) => {
-      // Check if the section is already selected
-      const isSelected = prevSelected.some((s) => s.crn === section.crn);
-      if (isSelected) {
-        // Remove the section
-        return prevSelected.filter((s) => s.crn !== section.crn);
-      } else {
-        // Add the section
-        return [...prevSelected, section];
+  const handleSectionSelection = (type: string, crnValue: string) => {
+    const crn = parseInt(crnValue);
+    const selectedSection = selectedCourse?.sections.find(
+      (section) => section.crn === crn
+    );
+
+    if (selectedSection) {
+      // Check for time conflict
+      const hasConflict = hasTimeConflict(selectedSection, selectedSections);
+
+      if (hasConflict) {
+        toast.error(`Time conflict detected for section ${selectedSection.section}`);
+        return;
       }
-    });
+
+      setSelectedSectionsByType((prev) => ({
+        ...prev,
+        [type]: selectedSection,
+      }));
+
+      setSelectedSections((prev) => {
+        // Remove any previous selection of this type for this course
+        const filteredSections = prev.filter(
+          (s) =>
+            !(
+              s.schedule_type === type &&
+              s.subject === selectedSection.subject &&
+              s.course_number === selectedSection.course_number
+            )
+        );
+
+        // Add the new selection
+        const newSections = [...filteredSections, selectedSection];
+
+        return newSections;
+      });
+
+      // Show toast notification with undo option
+      toast.success(`${selectedSection.subject} ${selectedSection.course_number} - Section ${selectedSection.section} added`, {
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            // Undo the selection
+            setSelectedSectionsByType((prev) => ({
+              ...prev,
+              [type]: null,
+            }));
+
+            setSelectedSections((prev) =>
+              prev.filter((s) => s.crn !== crn)
+            );
+          },
+        },
+      });
+    }
   };
 
   // Loading animation for progress bar
@@ -149,153 +233,247 @@ export default function ScheduleBuilderPage() {
   }, [loading]);
 
   // Search and filter logic
-  const searchWords = (searchTerm || '').toLowerCase().split(' ').filter(Boolean);
+  const searchWords = (searchTerm || '')
+    .toLowerCase()
+    .split(' ')
+    .filter(Boolean);
 
   const filteredCourses = groupedCourses.filter((course) => {
-    const courseString = `${course.subject || ''} ${course.course_number || ''} ${course.course_name || ''}`.toLowerCase();
+    const courseString = `${course.subject || ''} ${
+      course.course_number || ''
+    } ${course.course_name || ''}`.toLowerCase();
     const matchesSearch = searchWords.every((word) => courseString.includes(word));
     const matchesTerm = selectedTerm
-      ? course.sections.some((section) => section.term === parseInt(selectedTerm))
+      ? course.sections.some(
+          (section) => section.term === parseInt(selectedTerm)
+        )
       : true;
     return matchesSearch && matchesTerm;
   });
 
-  const subjectIdsWithMatchingCourses = new Set(filteredCourses.map((course) => course.subject));
+  const subjectIdsWithMatchingCourses = new Set(
+    filteredCourses.map((course) => course.subject)
+  );
 
   const filteredSubjects = subjects.filter(
     (subject) =>
-      (subject.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+      (subject.name || '')
+        .toLowerCase()
+        .includes((searchTerm || '').toLowerCase()) ||
       subjectIdsWithMatchingCourses.has(subject.id)
   );
 
+  // Calendar events
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Generate calendar events based on selectedSections
+    const events = selectedSections.flatMap((section) => {
+      // Ensure 'days' and 'time' are defined
+      if (!section.days || !section.time) {
+        return [];
+      }
+  
+      const daysArray = section.days.split('');
+      const timeRange = section.time.split('-').map((t) => t.trim());
+  
+      // Check if timeRange has both start and end times
+      if (timeRange.length !== 2) {
+        return [];
+      }
+  
+      const startTime = parseTime(timeRange[0]);
+      const endTime = parseTime(timeRange[1]);
+  
+      return daysArray.map((dayInitial) => {
+        const dayNumber = dayInitialsToNumbers[dayInitial];
+  
+        if (dayNumber === undefined) {
+          // Skip unknown day initial
+          return null;
+        }
+  
+        // Create event date by setting weekday to dayNumber in the current week
+        const eventDate = getDateOfWeekday(dayNumber);
+  
+        const startDateTime = new Date(eventDate);
+        startDateTime.setHours(startTime.hours, startTime.minutes);
+  
+        const endDateTime = new Date(eventDate);
+        endDateTime.setHours(endTime.hours, endTime.minutes);
+  
+        return {
+          title: `${section.subject} ${section.course_number} - ${section.schedule_type} ${section.section}`,
+          start: startDateTime,
+          end: endDateTime,
+        };
+      }).filter(Boolean); // Filter out any null values
+    });
+  
+    setCalendarEvents(events);
+  }, [selectedSections]);
+  
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+      <div className="flex items-center justify-center h-screen bg-surface-100 text-white">
         <div className="w-2/3">
           <p className="mb-4 text-center text-xl">Loading courses...</p>
-          <Progress value={progressValue} className="w-full bg-gray-800" />
+          <Progress value={progressValue} className="w-full bg-surface-200" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white">
-      <TopBar />
-      <div className="border-b border-gray-800 mt-16"></div> {/* Separator line */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-1/4 border-r border-gray-800 flex flex-col">
-          <div className="p-4 border-b border-gray-800">
-            <div className="relative mb-4">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-              <Input
-                type="search"
-                placeholder="Search courses or subjects"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 bg-gray-800 border-gray-700 text-white"
+    <>
+      <Toaster position="top-center" richColors />
+      <div className="flex flex-col h-screen bg-surface-100 text-white">
+        <TopBar />
+        <div className="border-b border-surface-300 mt-16"></div> {/* Separator line */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left Sidebar */}
+          <div className="w-1/4 border-r border-surface-300 flex flex-col bg-surface-200">
+            <div className="p-4 border-b border-surface-300">
+              <div className="relative mb-4">
+                <Search className="absolute left-2 top-2.5 h-5 w-5 text-surface-500" />
+                <Input
+                  type="search"
+                  placeholder="Search courses or subjects"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-surface-300 border-surface-400 text-white placeholder-surface-500 rounded-md"
+                />
+              </div>
+              <Select
+                value={selectedTerm}
+                onValueChange={(value) => setSelectedTerm(value)}
+              >
+                <SelectTrigger className="w-full bg-surface-300 border-surface-400 text-white placeholder-surface-500 rounded-md">
+                  <SelectValue placeholder="Select a term" />
+                </SelectTrigger>
+                <SelectContent>
+                  {terms.map((term) => (
+                    <SelectItem key={term} value={term.toString()}>
+                      {convertTermToString(term)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <ScrollArea className="flex-1">
+              <Accordion type="multiple" className="w-full">
+                {filteredSubjects.map((subject) => (
+                  <AccordionItem key={subject.id} value={subject.id}>
+                    <AccordionTrigger className="px-4 text-surface-600 hover:text-white">
+                      {subject.name}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      {filteredCourses
+                        .filter((course) => course.subject === subject.id)
+                        .sort((a, b) => a.course_number - b.course_number)
+                        .map((course) => (
+                          <Button
+                            key={`${course.subject}-${course.course_number}`}
+                            variant="ghost"
+                            className="w-full justify-start px-4 py-2 text-sm text-surface-600 hover:text-white"
+                            onClick={() => handleCourseClick(course)}
+                          >
+                            {course.subject} {course.course_number}: {course.course_name}
+                          </Button>
+                        ))}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </ScrollArea>
+          </div>
+          {/* Center - Calendar */}
+          <div className="w-1/2 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-4">
+              {/* FullCalendar Component */}
+              <FullCalendar
+                plugins={[timeGridPlugin]}
+                initialView="timeGridWeek"
+                events={calendarEvents}
+                headerToolbar={false}
+                allDaySlot={false}
+                height="100%"
+                slotMinTime="07:00:00"
+                slotMaxTime="22:00:00"
+                dayHeaderFormat={{ weekday: 'short' }}
+                eventDisplay="block"
+                eventClassNames="custom-event"
+                nowIndicator={true}
+                scrollTime="08:00:00"
+                displayEventTime={false}
               />
             </div>
-            <Select value={selectedTerm} onValueChange={(value) => setSelectedTerm(value)}>
-              <SelectTrigger className="w-full bg-gray-800 border-gray-700 text-white">
-                <SelectValue placeholder="Select a term" />
-              </SelectTrigger>
-              <SelectContent>
-                {terms.map((term) => (
-                  <SelectItem key={term} value={term.toString()}>
-                    {convertTermToString(term)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
-          <ScrollArea className="flex-1">
-            <Accordion type="multiple" className="w-full">
-              {filteredSubjects.map((subject) => (
-                <AccordionItem key={subject.id} value={subject.id}>
-                  <AccordionTrigger className="px-4 text-gray-300 hover:text-white">
-                    {subject.name}
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    {filteredCourses
-                      .filter((course) => course.subject === subject.id)
-                      .sort((a, b) => a.course_number - b.course_number)
-                      .map((course) => (
-                        <Button
-                          key={`${course.subject}-${course.course_number}`}
-                          variant="ghost"
-                          className="w-full justify-start px-4 py-2 text-sm text-gray-300 hover:text-white"
-                          onClick={() => handleCourseClick(course)}
-                        >
-                          {course.subject} {course.course_number}: {course.course_name}
-                        </Button>
-                      ))}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </ScrollArea>
-        </div>
-        {/* Center - Calendar */}
-        <div className="w-1/2 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-4">
-            {/* Calendar Component */}
-            <Calendar selectedSections={selectedSections} />
+          {/* Right Sidebar */}
+          <div className="w-1/4 border-l border-surface-300 p-4">
+            {selectedCourse ? (
+              <div className="flex flex-col h-full">
+                <h2 className="text-xl font-bold mb-4">
+                  {selectedCourse.subject} {selectedCourse.course_number}
+                </h2>
+                <p className="mb-4">{selectedCourse.course_name}</p>
+                <ScrollArea className="flex-1">
+                  {['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'].map(
+                    (type) => {
+                      const sectionsOfType = selectedCourse.sections
+                        .filter(
+                          (section) =>
+                            section.schedule_type === type &&
+                            (selectedTerm
+                              ? section.term === parseInt(selectedTerm)
+                              : true)
+                        )
+                        .sort((a, b) => a.section.localeCompare(b.section));
+
+                      if (sectionsOfType.length === 0) return null;
+
+                      return (
+                        <div key={type} className="mb-4">
+                          <h3 className="text-lg font-semibold mb-2">
+                            {type}s
+                          </h3>
+                          <RadioGroup
+                            orientation="vertical"
+                            value={
+                              selectedSectionsByType[type]?.crn.toString() || ''
+                            }
+                            onValueChange={(value) =>
+                              handleSectionSelection(type, value)
+                            }
+                          >
+                            {sectionsOfType.map((section) => (
+                              <Radio
+                                key={section.crn}
+                                value={section.crn.toString()}
+                              >
+                                Section {section.section} - {section.days}{' '}
+                                {section.time}
+                              </Radio>
+                            ))}
+                          </RadioGroup>
+                        </div>
+                      );
+                    }
+                  )}
+                </ScrollArea>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-surface-400 text-xl">
+                  Select a course to view sections
+                </p>
+              </div>
+            )}
           </div>
-        </div>
-        {/* Right Sidebar */}
-        <div className="w-1/4 border-l border-gray-800 p-4">
-          {selectedCourse ? (
-            <div className="flex flex-col h-full">
-              <h2 className="text-xl font-bold mb-4">
-                {selectedCourse.subject} {selectedCourse.course_number}
-              </h2>
-              <p className="mb-4">{selectedCourse.course_name}</p>
-              <ScrollArea className="flex-1">
-                {['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'].map((type) => {
-                  const sectionsOfType = selectedCourse.sections
-                    .filter(
-                      (section) =>
-                        section.schedule_type === type &&
-                        (selectedTerm ? section.term === parseInt(selectedTerm) : true)
-                    )
-                    .sort((a, b) => a.section.localeCompare(b.section));
-
-                  if (sectionsOfType.length === 0) return null;
-
-                  return (
-                    <div key={type} className="mb-4">
-                      <h3 className="text-lg font-semibold mb-2">{type}s</h3>
-                      {sectionsOfType.map((section, index) => {
-                        const isSelected = selectedSections.some((s) => s.crn === section.crn);
-                        return (
-                          <div key={index} className="flex items-center mb-2">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => handleSectionToggle(section)}
-                              className="mr-2"
-                            />
-                            <label className="flex-1">
-                              Section {section.section} - {section.days} {section.time}
-                            </label>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </ScrollArea>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-gray-500 text-xl">Select a course to view sections</p>
-            </div>
-          )}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -342,4 +520,114 @@ function convertTermToString(termCode: number): string {
   }
 
   return `${semester} ${year}`;
+}
+
+// Helper function to get current term code
+function getCurrentTermCode(): number {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+
+  let semesterCode = '09'; // Default to Fall
+  if (month <= 4) {
+    semesterCode = '01'; // Spring
+  } else if (month <= 8) {
+    semesterCode = '05'; // Summer
+  }
+
+  return parseInt(`${year}${semesterCode}`);
+}
+
+// Helper functions for calendar event generation
+const dayInitialsToNumbers: { [key: string]: number } = {
+  M: 1, // Monday
+  T: 2, // Tuesday
+  W: 3, // Wednesday
+  R: 4, // Thursday
+  F: 5, // Friday
+  S: 6, // Saturday
+  U: 0, // Sunday
+};
+
+function parseTime(timeStr: string): { hours: number; minutes: number } {
+  // Remove whitespace at the start and end, and convert to lowercase
+  timeStr = timeStr.trim().toLowerCase();
+
+  // Regular expression to parse time in 'h:mma', 'h:mm am', or 'h:mm a' formats
+  const timeRegex = /^(\d{1,2}):(\d{2})\s*(am|pm)$/i;
+  const match = timeRegex.exec(timeStr);
+
+  if (!match) {
+    throw new Error(`Invalid time format: ${timeStr}`);
+  }
+
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const meridiem = match[3];
+
+  if (meridiem === 'pm' && hours < 12) {
+    hours += 12;
+  } else if (meridiem === 'am' && hours === 12) {
+    hours = 0;
+  }
+
+  return { hours, minutes };
+}
+
+function getDateOfWeekday(weekday: number): Date {
+  const date = new Date(); // Today's date
+  const day = date.getDay(); // 0 (Sun) to 6 (Sat)
+  const diff = weekday - day;
+  const eventDate = new Date(date);
+  eventDate.setDate(date.getDate() + diff);
+  eventDate.setHours(0, 0, 0, 0); // Reset time
+  return eventDate;
+}
+
+// Helper function to check for time conflicts
+function hasTimeConflict(newSection: Section, selectedSections: Section[]): boolean {
+  const newSectionTimes = getSectionTimes(newSection);
+
+  return selectedSections.some((section) => {
+    const sectionTimes = getSectionTimes(section);
+
+    return newSectionTimes.some((newTime) =>
+      sectionTimes.some(
+        (time) =>
+          time && newTime && time.day === newTime.day &&
+          ((newTime.start >= time.start && newTime.start < time.end) ||
+            (time.start >= newTime.start && time.start < newTime.end))
+      )
+    );
+  });
+}
+
+function getSectionTimes(section: Section) {
+  // Ensure 'days' and 'time' are defined
+  if (!section.days || !section.time) {
+    return [];
+  }
+
+  const daysArray = section.days.split('');
+  const timeRange = section.time.split('-').map((t) => t.trim());
+
+  // Check if timeRange has both start and end times
+  if (timeRange.length !== 2) {
+    return [];
+  }
+
+  const startTime = parseTime(timeRange[0]);
+  const endTime = parseTime(timeRange[1]);
+
+  return daysArray.map((dayInitial) => {
+    const dayNumber = dayInitialsToNumbers[dayInitial];
+    if (dayNumber === undefined) {
+      return null;
+    }
+    return {
+      day: dayNumber,
+      start: startTime.hours * 60 + startTime.minutes, // Convert to minutes
+      end: endTime.hours * 60 + endTime.minutes,
+    };
+  }).filter(Boolean); // Filter out any null values
 }

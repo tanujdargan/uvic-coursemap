@@ -12,6 +12,30 @@ const config: Config = {
   theme: {
   	extend: {
   		colors: {
+			primary2: {
+				100: '#03a9f4',
+				200: '#4ab2f5',
+				300: '#6abcf7',
+				400: '#84c5f8',
+				500: '#9bcefa',
+				600: '#b1d8fb',
+			  },
+			  surface: {
+				100: '#121212',
+				200: '#282828',
+				300: '#3f3f3f',
+				400: '#575757',
+				500: '#717171',
+				600: '#8b8b8b',
+			  },
+			  'surface-mixed': {
+				100: '#1e2c38',
+				200: '#34404b',
+				300: '#4a5560',
+				400: '#626b75',
+				500: '#7a828a',
+				600: '#939aa0',
+			  },
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

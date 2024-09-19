@@ -1,72 +1,81 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @layer base {
+  /* Set default font family */
+  html {
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Apply dark theme */
+  body {
+    @apply bg-surface-100 text-white;
+  }
+
+  /* Custom CSS variables */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
- 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
- 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
- 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
- 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
- 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
- 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
- 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
- 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
- 
-    --ring: 215 20.2% 65.1%;
- 
+    /* Your custom colors */
+    --color-primary-100: #03a9f4;
+    --color-primary-200: #4ab2f5;
+    /* ... rest of your custom colors ... */
+
     --radius: 0.5rem;
   }
- 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
- 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
- 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
- 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
- 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
- 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
- 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
- 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
- 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 85.7% 97.3%;
- 
-    --ring: 217.2 32.6% 17.5%;
+
+  /* Tailwind CSS Dark Mode */
+  .dark body {
+    @apply bg-surface-100 text-white;
   }
+
+  /* Override FullCalendar current day highlight */
+  .fc .fc-day-today {
+    background-color: rgba(255, 255, 255, 0.05); /* Subtle light shade */
+  }
+
+  /* Customize FullCalendar appearance */
+  .fc-theme-standard .fc-scrollgrid {
+    border: none;
+  }
+
+  .fc-theme-standard td, .fc-theme-standard th {
+    border: 1px solid #3f3f3f; /* Use a surface color for borders */
+  }
+
+  .fc-event {
+    background-color: var(--color-primary-500);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+  }
+
+  .fc .fc-toolbar.fc-header-toolbar {
+    margin-bottom: 1rem;
+  }
+
+  .fc .fc-daygrid-day-number {
+    color: #fff;
+  }
+
+  /* Override FullCalendar current day highlight */
+.fc-theme-standard .fc-scrollgrid td.fc-day-today {
+  background-color: rgba(255, 255, 255, 0.05) !important; /* Subtle light shade */
 }
+
+}
+/* In globals.css or a CSS module */
+.custom-event {
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.custom-event:hover {
+  transform: scale(1.02);
+  background-color: var(--color-primary-200);
+}
+
+
 .video-bg video {
   position: fixed;
   top: 0;
