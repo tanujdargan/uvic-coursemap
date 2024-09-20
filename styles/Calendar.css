@@ -1,0 +1,236 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+/* Calendar Container */
+.rbc-calendar {
+  background-color: #121212;
+  color: #e8eaed;
+  font-family: 'Roboto', sans-serif;
+  border: none;
+}
+
+/* Calendar Navigation Buttons (if you enable toolbar) */
+.rbc-toolbar {
+  background-color: #121212;
+  color: #e8eaed;
+  padding: 10px;
+  border-bottom: 1px solid #5f6368;
+}
+
+.rbc-toolbar button {
+  background: none;
+  border: none;
+  color: #e8eaed;
+  padding: 5px 10px;
+  margin: 0 5px;
+  cursor: pointer;
+}
+
+.rbc-toolbar button:hover {
+  background-color: #5f6368;
+  border-radius: 4px;
+}
+
+/* Calendar Header (Day Labels) */
+.rbc-time-header {
+  background-color: #121212;
+  border-bottom: none;
+}
+
+.rbc-time-header-cell {
+  color: #e8eaed;
+  border-left: 1px solid #5f6368;
+}
+
+.rbc-time-header-cell:first-child {
+  border-left: none;
+}
+
+.rbc-day-slot .rbc-time-slot {
+  border-top: 1px solid #5f6368;
+}
+
+/* Time Gutter (Time Labels on the Left) */
+.rbc-time-gutter {
+  background-color: #121212;
+  color: #e8eaed;
+  border-right: 1px solid #5f6368;
+}
+
+.rbc-timeslot-group {
+  border-bottom: 1px solid #5f6368;
+}
+
+/* Time Slots */
+.rbc-time-content {
+  border-top: none;
+  background-color: #121212;
+}
+
+.rbc-day-slot .rbc-time-slot {
+  border-top: none;
+  background-color: #121212;
+}
+
+.rbc-time-slot {
+  background-color: #121212;
+}
+
+/* Events */
+.rbc-event {
+  background-color: #121212;
+  color: #e8eaed;
+  border-radius: 4px;
+  padding: 2px 4px;
+  border: none;
+}
+
+.rbc-event:hover {
+  background-color: #121212;
+}
+
+/* Now Indicator (Current Time Line) */
+.rbc-current-time-indicator {
+  background-color: #fbbc05;
+}
+
+/* Today's Highlight */
+.rbc-day-bg.rbc-today {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Event Overlap Styling */
+.rbc-event.rbc-event-continues-earlier,
+.rbc-event.rbc-event-continues-later {
+  border-radius: 4px;
+}
+
+/* Scrollbar Styling */
+.rbc-time-content {
+  scrollbar-width: thin;
+  scrollbar-color: #5f6368 #202124;
+}
+
+.rbc-time-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.rbc-time-content::-webkit-scrollbar-track {
+  background: #121212;
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb {
+  background-color: #121212;
+  border-radius: 4px;
+  border: 2px solid #121212;
+}
+
+/* Adjustments for the Week View */
+.rbc-time-view {
+  border: none;
+}
+
+.rbc-time-view .rbc-allday-cell {
+  display: none;
+}
+
+.rbc-time-header-content {
+  border-left: none;
+  border-top: none;
+}
+
+.rbc-time-header-cell {
+  padding: 8px 0;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* Remove All-Day Event Row */
+.rbc-allday-cell {
+  display: none;
+}
+
+/* Event Titles */
+.rbc-event-content {
+  color: #e8eaed;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Hide the AM/PM indicators on time labels */
+.rbc-label {
+  color: #e8eaed;
+}
+
+.rbc-timeslot-group .rbc-timeslot {
+  height: 60px;
+}
+
+/* Custom Event Styling */
+.rbc-event {
+  box-shadow: none;
+}
+
+/* Hide borders between time slots */
+.rbc-timeslot-group {
+  border-bottom: none;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .rbc-time-header-cell {
+    font-size: 12px;
+  }
+
+  .rbc-event-content {
+    font-size: 10px;
+  }
+}
+
+.fc .fc-event {
+  color: #fff;
+  cursor: pointer;
+}
+
+/* Tooltip styling */
+.custom-tooltip {
+  position: absolute;
+  z-index: 1000;
+}
+
+.rbc-time-content,
+.rbc-day-slot .rbc-time-slot,
+.rbc-time-slot {
+  background-color: #121212d2 !important;
+}
+
+/* Remove left border of the first column */
+.rbc-time-column:first-child {
+  border-left: none;
+}
+
+/* Remove right border of the last column */
+.rbc-time-column:last-child {
+  border-right: none;
+}
+
+/* Remove bottom border of the last time slot */
+.rbc-time-slot:last-child {
+  border-bottom: none;
+}
+
+.rbc-calendar,
+.rbc-time-view,
+.rbc-time-header,
+.rbc-time-content,
+.rbc-time-column:first-child,
+.rbc-time-column:last-child,
+.rbc-time-header-content,
+.rbc-time-slot:last-child {
+  border: none !important;
+}
+
+.rbc-time-gutter {
+  border-right: 1px solid #5f6368 !important;
+}

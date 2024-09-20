@@ -20,51 +20,11 @@
     /* Your custom colors */
     --color-primary-100: #03a9f4;
     --color-primary-200: #4ab2f5;
-    /* ... rest of your custom colors ... */
 
     --radius: 0.5rem;
   }
-
-  /* Tailwind CSS Dark Mode */
-  .dark body {
-    @apply bg-surface-100 text-white;
-  }
-
-  /* Override FullCalendar current day highlight */
-  .fc .fc-day-today {
-    background-color: rgba(255, 255, 255, 0.05); /* Subtle light shade */
-  }
-
-  /* Customize FullCalendar appearance */
-  .fc-theme-standard .fc-scrollgrid {
-    border: none;
-  }
-
-  .fc-theme-standard td, .fc-theme-standard th {
-    border: 1px solid #3f3f3f; /* Use a surface color for borders */
-  }
-
-  .fc-event {
-    background-color: var(--color-primary-500);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius);
-  }
-
-  .fc .fc-toolbar.fc-header-toolbar {
-    margin-bottom: 1rem;
-  }
-
-  .fc .fc-daygrid-day-number {
-    color: #fff;
-  }
-
-  /* Override FullCalendar current day highlight */
-.fc-theme-standard .fc-scrollgrid td.fc-day-today {
-  background-color: rgba(255, 255, 255, 0.05) !important; /* Subtle light shade */
 }
 
-}
 /* In globals.css or a CSS module */
 .custom-event {
   transition: transform 0.2s ease, background-color 0.2s ease;
