@@ -19,24 +19,17 @@ import {
   getSectionTimes,
 } from '@/utils/sectionUtils';
 
-// Import Sonner for toast notifications
 import { Toaster, toast } from 'sonner';
 
-// ** Import React Big Calendar and necessary dependencies **
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 
 import CalendarComponent from '@/components/CalendarComponent';
 
-// Import CSS for React Big Calendar and custom styles
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../../styles/Calendar.css';
 
-// Removed direct import of HammerJS
-// import Hammer from 'hammerjs';
-
-// Import interfaces
 import { Course, Section, Subject } from '../../utils/interfaces';
 
 export default function ScheduleBuilderPage() {
@@ -57,10 +50,10 @@ export default function ScheduleBuilderPage() {
   const [rightSidebarOpen, setRightSidebarOpen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
 
-  // ** Additional state for mounting check **
-  const [isMounted, setIsMounted] = useState<boolean>(false);
+  const [savedCourseColors, setSavedCourseColors] = useState<{ [key: string]: string }>({});
 
-  // ** Define locales and localizer for react-big-calendar **
+  const [courseColors, setCourseColors] = useState<{ [key: string]: string }>({});
+
   const locales = {
     'en-US': enUS,
   };
@@ -73,7 +66,6 @@ export default function ScheduleBuilderPage() {
     locales,
   });
 
-  // ** Define a list of 8 colors **
   const eventColors = [
     '#039BE5', // Blue
     '#D81B60', // Pink
@@ -85,20 +77,117 @@ export default function ScheduleBuilderPage() {
     '#1E88E5', // Light Blue
   ];
 
-  // ** Assign a random color to each course and store in a map **
-  const [courseColors, setCourseColors] = useState<{ [key: string]: string }>({});
+  useEffect(() => {
+    fetchCourses();
+    handleResize(); // Check initial screen size
+    window.addEventListener('resize', handleResize);
+    if (isMobile) {
+      initializeSwipe();
+    }
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  const handleResize = () => {
+    const isMobileView = window.innerWidth <= 768;
+    setIsMobile(isMobileView);
+    if (!isMobileView) {
+      setLeftSidebarOpen(true);
+      setRightSidebarOpen(true);
+    }
+  };
+
+  const fetchCourses = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/courses');
+      const data: Section[] = await response.json();
+
+      const grouped = groupSectionsIntoCourses(data);
+      setGroupedCourses(grouped);
+
+      const uniqueSubjects = Array.from(new Set(grouped.map((course) => course.subject)));
+      uniqueSubjects.sort();
+
+      setSubjects(
+        uniqueSubjects.map((subject) => ({
+          id: subject,
+          name: subject,
+        }))
+      );
+
+      const uniqueTerms = Array.from(new Set(data.map((section) => section.term)));
+      uniqueTerms.sort((a, b) => a - b);
+
+      setTerms(uniqueTerms);
+
+      const currentTermCode = getCurrentTermCode();
+      const currentTermIndex = uniqueTerms.findIndex((term) => term >= currentTermCode);
+      const defaultTermIndex = currentTermIndex !== -1 ? currentTermIndex : 0;
+      setSelectedTerm(uniqueTerms[defaultTermIndex]?.toString() || '');
+
+      if (typeof window !== 'undefined') {
+        const storedTimetable = localStorage.getItem('savedTimetable');
+        if (storedTimetable) {
+          const timetableData = JSON.parse(storedTimetable);
+          const crns = timetableData.crns;
+          const savedColors = timetableData.colors;
+
+          const sections: Section[] = [];
+
+          for (const crn of crns) {
+            const section = findSectionByCrn(crn, grouped);
+            if (section) {
+              sections.push(section);
+            }
+          }
+
+          setSelectedSections(sections);
+
+          const sectionsByType: { [type: string]: Section } = {};
+          sections.forEach((section) => {
+            const key = section.schedule_type;
+            sectionsByType[key] = section;
+          });
+          setSelectedSectionsByType(sectionsByType);
+
+          setSavedCourseColors(savedColors);
+
+          toast.success('Loaded saved timetable');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const findSectionByCrn = (crn: number, groupedCourses: Course[]) => {
+    for (const course of groupedCourses) {
+      const section = course.sections.find((sec) => sec.crn === crn);
+      if (section) {
+        return section;
+      }
+    }
+    return null;
+  };
 
   useEffect(() => {
     const colorsMap: { [key: string]: string } = {};
     groupedCourses.forEach((course) => {
       const key = `${course.subject}-${course.course_number}`;
-      // Assign a random color from the list
-      colorsMap[key] = eventColors[Math.floor(Math.random() * eventColors.length)];
+      const savedColor = savedCourseColors[key];
+      if (savedColor) {
+        colorsMap[key] = savedColor;
+      } else {
+        colorsMap[key] = eventColors[Math.floor(Math.random() * eventColors.length)];
+      }
     });
     setCourseColors(colorsMap);
-  }, [groupedCourses]);
+  }, [groupedCourses, savedCourseColors]);
 
-  // ** Define event style getter for custom event styling **
   const eventStyleGetter = (event: any, start: any, end: any, isSelected: boolean) => {
     const backgroundColor = event.color || '#3c4043';
     const style = {
@@ -114,43 +203,11 @@ export default function ScheduleBuilderPage() {
     };
   };
 
-  // ** Define custom date cell wrapper for time slot styling **
-  const ColoredDateCellWrapper = ({ children }: any) =>
-    React.cloneElement(React.Children.only(children), {
-      style: {
-        backgroundColor: '#202124',
-      },
-    });
-
   useEffect(() => {
-    setIsMounted(true);
-    fetchCourses();
-  }, []);
-
-  useEffect(() => {
-    if (isMounted) {
-      handleResize(); // Check initial screen size
-      window.addEventListener('resize', handleResize);
-      // Initialize swipe gestures
+    if (isMobile) {
       initializeSwipe();
-      return () => {
-        window.removeEventListener('resize', handleResize);
-      };
     }
-  }, [isMounted]);
-
-  const handleResize = () => {
-    if (typeof window !== 'undefined') {
-      setIsMobile(window.innerWidth <= 768);
-      if (window.innerWidth > 768) {
-        setLeftSidebarOpen(true);
-        setRightSidebarOpen(true);
-      } else {
-        setLeftSidebarOpen(false);
-        setRightSidebarOpen(false);
-      }
-    }
-  };
+  }, [isMobile]);
 
   const initializeSwipe = () => {
     if (typeof window !== 'undefined') {
@@ -174,94 +231,7 @@ export default function ScheduleBuilderPage() {
     }
   };
 
-  const fetchCourses = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/courses');
-      const data: Section[] = await response.json();
-
-      // Group sections into courses
-      const grouped = groupSectionsIntoCourses(data);
-      setGroupedCourses(grouped);
-
-      // Extract unique subjects and sort them alphabetically
-      const uniqueSubjects = Array.from(new Set(grouped.map((course) => course.subject)));
-      uniqueSubjects.sort();
-
-      setSubjects(
-        uniqueSubjects.map((subject) => ({
-          id: subject,
-          name: subject,
-        }))
-      );
-
-      // Extract unique terms
-      const uniqueTerms = Array.from(new Set(data.map((section) => section.term)));
-      uniqueTerms.sort((a, b) => a - b); // Sort in ascending order
-
-      setTerms(uniqueTerms);
-
-      // Select the closest upcoming term
-      const currentTermCode = getCurrentTermCode();
-      const currentTermIndex = uniqueTerms.findIndex((term) => term >= currentTermCode);
-      const defaultTermIndex = currentTermIndex !== -1 ? currentTermIndex : 0;
-      setSelectedTerm(uniqueTerms[defaultTermIndex]?.toString() || '');
-    } catch (error) {
-      console.error('Error fetching courses:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load selectedSections from localStorage when groupedCourses are loaded
-  useEffect(() => {
-    if (isMounted && groupedCourses.length > 0 && typeof window !== 'undefined') {
-      const storedCrns = localStorage.getItem('selectedCrns');
-      if (storedCrns) {
-        const crns = JSON.parse(storedCrns); // an array of crns
-        const sections: Section[] = [];
-
-        for (const crn of crns) {
-          const section = findSectionByCrn(crn, groupedCourses);
-          if (section) {
-            sections.push(section);
-          }
-        }
-
-        setSelectedSections(sections);
-
-        // Also set selectedSectionsByType
-        const sectionsByType: { [type: string]: Section } = {};
-        sections.forEach((section) => {
-          const key = section.schedule_type;
-          sectionsByType[key] = section;
-        });
-        setSelectedSectionsByType(sectionsByType);
-      }
-    }
-  }, [isMounted, groupedCourses]);
-
-  const findSectionByCrn = (crn: number, groupedCourses: Course[]) => {
-    for (const course of groupedCourses) {
-      const section = course.sections.find((sec) => sec.crn === crn);
-      if (section) {
-        return section;
-      }
-    }
-    return null;
-  };
-
-  // Save selectedSections to localStorage whenever it changes
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const crns = selectedSections.map((section) => section.crn);
-      localStorage.setItem('selectedCrns', JSON.stringify(crns));
-    }
-  }, [selectedSections]);
-
-  // Handle course click
   const handleCourseClick = (course: Course) => {
-    // Automatically select the first section of each type
     const initialSelections: { [type: string]: Section } = {};
 
     ['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'].forEach((type) => {
@@ -276,12 +246,10 @@ export default function ScheduleBuilderPage() {
 
     const newSelectedSections = Object.values(initialSelections);
 
-    // Remove previous selections of this course
     const filteredPrev = selectedSections.filter(
       (s) => s.subject !== course.subject || s.course_number !== course.course_number
     );
 
-    // Check for time conflicts between newSelectedSections and filteredPrev
     const hasConflict = newSelectedSections.some((newSection) =>
       hasTimeConflict(newSection, filteredPrev)
     );
@@ -291,7 +259,6 @@ export default function ScheduleBuilderPage() {
       return;
     }
 
-    // No conflict, proceed to update state
     setSelectedSections([...filteredPrev, ...newSelectedSections]);
 
     setSelectedSectionsByType((prev) => ({
@@ -301,19 +268,17 @@ export default function ScheduleBuilderPage() {
 
     setSelectedCourse(course);
 
-    // If on mobile, close left sidebar
     if (isMobile) {
       setLeftSidebarOpen(false);
+      setRightSidebarOpen(false);
     }
   };
 
-  // Handle section selection
   const handleSectionSelection = (type: string, crnValue: string) => {
     const crn = parseInt(crnValue);
     const selectedSection = selectedCourse?.sections.find((section) => section.crn === crn);
 
     if (selectedSection) {
-      // Check for time conflict
       const hasConflict = hasTimeConflict(selectedSection, selectedSections);
 
       if (hasConflict) {
@@ -327,7 +292,6 @@ export default function ScheduleBuilderPage() {
       }));
 
       setSelectedSections((prev) => {
-        // Remove any previous selection of this type for this course
         const filteredSections = prev.filter(
           (s) =>
             !(
@@ -337,20 +301,17 @@ export default function ScheduleBuilderPage() {
             )
         );
 
-        // Add the new selection
         const newSections = [...filteredSections, selectedSection];
 
         return newSections;
       });
 
-      // Show toast notification with undo option
       toast.success(
         `${selectedSection.subject} ${selectedSection.course_number} - Section ${selectedSection.section} added`,
         {
           action: {
             label: 'Undo',
             onClick: () => {
-              // Undo the selection
               setSelectedSectionsByType((prev) => ({
                 ...prev,
                 [type]: null,
@@ -364,7 +325,6 @@ export default function ScheduleBuilderPage() {
     }
   };
 
-  // Loading animation for progress bar
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (loading) {
@@ -375,7 +335,6 @@ export default function ScheduleBuilderPage() {
     return () => clearInterval(interval);
   }, [loading]);
 
-  // Search and filter logic
   const searchWords = (searchTerm || '')
     .toLowerCase()
     .split(' ')
@@ -400,14 +359,11 @@ export default function ScheduleBuilderPage() {
       subjectIdsWithMatchingCourses.has(subject.id)
   );
 
-  // Calendar events
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
 
   useEffect(() => {
-    // Generate calendar events based on selectedSections
     const events = selectedSections
       .flatMap((section) => {
-        // Ensure 'days' and 'time' are defined
         if (!section.days || !section.time) {
           return [];
         }
@@ -415,7 +371,6 @@ export default function ScheduleBuilderPage() {
         const daysArray = section.days.split('');
         const timeRange = section.time.split('-').map((t) => t.trim());
 
-        // Check if timeRange has both start and end times
         if (timeRange.length !== 2) {
           return [];
         }
@@ -431,11 +386,9 @@ export default function ScheduleBuilderPage() {
             const dayNumber = dayInitialsToNumbers[dayInitial];
 
             if (dayNumber === undefined) {
-              // Skip unknown day initial
               return null;
             }
 
-            // Create event date by setting weekday to dayNumber in the current week
             const eventDate = getDateOfWeekday(dayNumber);
 
             const startDateTime = new Date(eventDate);
@@ -448,18 +401,21 @@ export default function ScheduleBuilderPage() {
               title: `${section.subject} ${section.course_number} - ${section.schedule_type} ${section.section}`,
               start: startDateTime,
               end: endDateTime,
-              color: eventColor, // Assign color to event
+              color: eventColor,
             };
           })
-          .filter(Boolean); // Filter out any null values
+          .filter(Boolean);
       })
-      .filter(Boolean); // Filter out any null values
+      .filter(Boolean);
 
     setCalendarEvents(events);
   }, [selectedSections, courseColors]);
 
-  // Function to generate ICS file content
   const handleExportICS = () => {
+    if (calendarEvents.length === 0) {
+      toast.error('No events to export');
+      return;
+    }
     const ICSContent = generateICS(calendarEvents);
     const blob = new Blob([ICSContent], { type: 'text/calendar;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -512,6 +468,24 @@ export default function ScheduleBuilderPage() {
       .replace(/\n/g, '\\n');
   };
 
+  const handleSaveTimetable = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const crns = selectedSections.map((section) => section.crn);
+        const colors = courseColors;
+        const timetableData = {
+          crns,
+          colors,
+        };
+        localStorage.setItem('savedTimetable', JSON.stringify(timetableData));
+        toast.success('Timetable saved successfully!');
+      }
+    } catch (error) {
+      console.error('Failed to save timetable:', error);
+      toast.error('Failed to save timetable');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-surface-100 text-white">
@@ -528,42 +502,40 @@ export default function ScheduleBuilderPage() {
       <Toaster position="top-center" richColors />
       <div className="flex flex-col h-screen bg-surface-100 text-white">
         <TopBar />
-        {/* Export to ICS Button */}
-        <div className="fixed bottom-4 right-4 z-20">
-          <button
-            className="bg-primary text-white px-4 py-2 rounded"
-            onClick={handleExportICS}
-          >
-            Export to .ics
-          </button>
-        </div>
         <div className="border-b border-surface-300 mt-16"></div> {/* Separator line */}
-        <div className="flex flex-1 overflow-hidden relative">
+        <div className={`flex flex-1 h-full ${isMobile ? 'overflow-hidden' : ''}`}>
           {/* Left Sidebar */}
           <div
-            className={`transition-transform duration-300 ${
-              leftSidebarOpen ? 'transform translate-x-0' : 'transform -translate-x-full'
-            } ${isMobile ? 'absolute z-10 top-0 bottom-0 left-0 w-64' : ''}`}
+            className={`${
+              isMobile
+                ? `transform transition-transform duration-300 ease-in-out ${
+                    leftSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                  } absolute z-20 top-0 bottom-0 left-0 w-64`
+                : 'w-64'
+            }`}
           >
-            {leftSidebarOpen && (
-              <LeftSidebar
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                selectedTerm={selectedTerm}
-                setSelectedTerm={setSelectedTerm}
-                terms={terms}
-                filteredSubjects={filteredSubjects}
-                filteredCourses={filteredCourses}
-                handleCourseClick={handleCourseClick}
-                convertTermToString={convertTermToString}
-              />
-            )}
+            <LeftSidebar
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              selectedTerm={selectedTerm}
+              setSelectedTerm={setSelectedTerm}
+              terms={terms}
+              filteredSubjects={filteredSubjects}
+              filteredCourses={filteredCourses}
+              handleCourseClick={handleCourseClick}
+              convertTermToString={convertTermToString}
+            />
           </div>
           {/* Left Swipe Arrow */}
           {isMobile && (
             <div
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 p-2 cursor-pointer"
-              onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+              className={`absolute top-1/2 transform -translate-y-1/2 z-20 p-2 cursor-pointer transition-transform duration-300 ${
+                leftSidebarOpen ? 'left-64' : 'left-0'
+              }`}
+              onClick={() => {
+                setLeftSidebarOpen(!leftSidebarOpen);
+                setRightSidebarOpen(false);
+              }}
             >
               {leftSidebarOpen ? (
                 <ChevronLeft className="text-white" />
@@ -573,33 +545,42 @@ export default function ScheduleBuilderPage() {
             </div>
           )}
           {/* Center - Calendar */}
-          <CalendarComponent
-            calendarEvents={calendarEvents}
-            eventStyleGetter={eventStyleGetter} // If you have a custom style getter
-            isMobile={isMobile}
-          />
-
+          <div className="flex-grow ">
+            <CalendarComponent
+              calendarEvents={calendarEvents}
+              eventStyleGetter={eventStyleGetter}
+              isMobile={isMobile}
+            />
+          </div>
           {/* Right Sidebar */}
           <div
-            className={`transition-transform duration-300 ${
-              rightSidebarOpen ? 'transform translate-x-0' : 'transform translate-x-full'
-            } ${isMobile ? 'absolute z-10 top-0 bottom-0 right-0 w-64' : ''}`}
+            className={`${
+              isMobile
+                ? `transform transition-transform duration-300 ease-in-out ${
+                    rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+                  } absolute z-20 top-0 bottom-0 right-0 w-64`
+                : 'w-64'
+            }`}
           >
-            {rightSidebarOpen && (
-              <RightSidebar
-                selectedCourse={selectedCourse}
-                selectedTerm={selectedTerm}
-                selectedSectionsByType={selectedSectionsByType}
-                handleSectionSelection={handleSectionSelection}
-              />
-            )}
+            <RightSidebar
+              selectedCourse={selectedCourse}
+              selectedTerm={selectedTerm}
+              selectedSectionsByType={selectedSectionsByType}
+              handleSectionSelection={handleSectionSelection}
+              handleExportICS={handleExportICS}
+              handleSaveTimetable={handleSaveTimetable}
+            />
           </div>
-
           {/* Right Swipe Arrow */}
           {isMobile && (
             <div
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 p-2 cursor-pointer"
-              onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+              className={`absolute top-1/2 transform -translate-y-1/2 z-20 p-2 cursor-pointer transition-transform duration-300 ${
+                rightSidebarOpen ? 'right-64' : 'right-0'
+              }`}
+              onClick={() => {
+                setRightSidebarOpen(!rightSidebarOpen);
+                setLeftSidebarOpen(false);
+              }}
             >
               {rightSidebarOpen ? (
                 <ChevronRight className="text-white" />

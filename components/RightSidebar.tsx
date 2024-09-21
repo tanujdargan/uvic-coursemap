@@ -1,40 +1,17 @@
+// components/RightSidebar.tsx
+
 'use client';
 
 import React from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { RadioGroup, Radio } from '@nextui-org/react';
-
-// Import interfaces
-interface Section {
-  term: number;
-  subject: string;
-  course_name: string;
-  course_number: number;
-  crn: number;
-  section: string;
-  frequency: string;
-  time: string;
-  days: string;
-  location: string;
-  date_range: string;
-  schedule_type: string;
-  instructor: string;
-  instructional_method: string;
-  units: number;
-}
-
-interface Course {
-  subject: string;
-  course_number: number;
-  course_name: string;
-  sections: Section[];
-}
+import { Section, Course } from '../utils/interfaces';
 
 interface RightSidebarProps {
   selectedCourse: Course | null;
   selectedTerm: string;
   selectedSectionsByType: { [type: string]: Section | null };
   handleSectionSelection: (type: string, crnValue: string) => void;
+  handleExportICS: () => void;
+  handleSaveTimetable: () => void;
 }
 
 const RightSidebar: React.FC<RightSidebarProps> = ({
@@ -42,53 +19,68 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   selectedTerm,
   selectedSectionsByType,
   handleSectionSelection,
+  handleExportICS,
+  handleSaveTimetable,
 }) => {
   return (
-    <div className="w-full md:w-1/4 border-l border-surface-100 p-4 absolute md:relative z-10 right-0 top-0 h-full bg-surface-100">
+    <div className="bg-surface-200 h-full p-4 overflow-y-auto">
       {selectedCourse ? (
-        <div className="flex flex-col h-full">
+        <>
           <h2 className="text-xl font-bold mb-4">
             {selectedCourse.subject} {selectedCourse.course_number}
           </h2>
-          <p className="mb-4">{selectedCourse.course_name}</p>
-          <ScrollArea className="flex-1">
-            {['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'].map((type) => {
-              const sectionsOfType = selectedCourse.sections
-                .filter(
-                  (section) =>
-                    section.schedule_type === type &&
-                    (selectedTerm ? section.term === parseInt(selectedTerm) : true)
-                )
-                .sort((a, b) => a.section.localeCompare(b.section));
+          {['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'].map((type) => {
+            const sectionsOfType = selectedCourse.sections
+              .filter(
+                (section) =>
+                  section.schedule_type === type && section.term === parseInt(selectedTerm)
+              )
+              .sort((a, b) => a.section.localeCompare(b.section));
 
-              if (sectionsOfType.length === 0) return null;
-
-              return (
-                <div key={type} className="mb-4">
-                  <h3 className="text-lg font-semibold mb-2">{type}s</h3>
-                  <RadioGroup
-                    orientation="vertical"
-                    value={selectedSectionsByType[type]?.crn.toString() || ''}
-                    onValueChange={(value) => handleSectionSelection(type, value)}
-                  >
-                    {sectionsOfType.map((section) => (
-                      <Radio key={section.crn} value={section.crn.toString()}>
-                        Section {section.section} - {section.days} {section.time}
-                      </Radio>
-                    ))}
-                  </RadioGroup>
+            if (sectionsOfType.length === 0) {
+              return null;
+            }
+            return (
+              <div key={type} className="mb-4">
+                <label className="block text-sm font-medium mb-1">{type}:</label>
+                <div className="space-y-2">
+                  {sectionsOfType.map((section) => (
+                    <label key={section.crn} className="flex items-center">
+                      <input
+                        type="radio"
+                        name={`${type}-section`}
+                        value={section.crn}
+                        checked={selectedSectionsByType[type]?.crn === section.crn}
+                        onChange={(e) => handleSectionSelection(type, e.target.value)}
+                      />
+                      <span className="ml-2">
+                        Section {section.section} ({section.days} {section.time})
+                      </span>
+                    </label>
+                  ))}
                 </div>
-              );
-            })}
-          </ScrollArea>
-        </div>
+              </div>
+            );
+          })}
+        </>
       ) : (
-        <div className="flex items-center justify-center h-full">
-          <p className="text-surface-400 text-xl">Select a course to view sections</p>
-        </div>
+        <p className="text-center">Select a course to view sections</p>
       )}
+      {/* Save Timetable Button */}
+      <button
+        className="mt-4 w-full bg-green-600 hover:bg-green-500 text-white py-2 px-4 rounded"
+        onClick={handleSaveTimetable}
+      >
+        Save Timetable
+      </button>
+      {/* Export to ICS Button */}
+      <button
+        className="mt-2 w-full bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded"
+        onClick={handleExportICS}
+      >
+        Export to .ics
+      </button>
     </div>
   );
 };
-
 export default RightSidebar;

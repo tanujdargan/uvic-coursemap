@@ -6,7 +6,7 @@ import React from 'react';
 import { Calendar } from 'react-big-calendar';
 import CustomHeader from './CustomHeader';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import '../styles/Calendar.css'; 
+import '../styles/Calendar.css';
 
 import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
@@ -78,14 +78,8 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
       },
     });
 
-  return (
-    <div
-      id="calendar-container"
-      className={`flex flex-col overflow-hidden flex-1 ${
-        isMobile ? '' : 'w-1/2'
-      }`}
-    >
-      <div className="flex-1 overflow-y-auto p-0">
+    return (
+      <div id="calendar-container" className="flex flex-col h-full overflow-hidden">
         {/* React Big Calendar Component */}
         <Calendar
           localizer={localizer}
@@ -107,8 +101,7 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
           toolbar={false} // Hide the default toolbar
         />
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 export default CalendarComponent;

@@ -48,7 +48,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   convertTermToString,
 }) => {
   return (
-    <div className="w-full md:w-1/4 border-r border-surface-300 flex flex-col bg-surface-100 absolute md:relative z-10 left-0 top-0 h-full">
+    <div className="w-full md:w-1/1 border-r border-surface-300 flex flex-col bg-surface-100 absolute md:relative z-10 left-0 top-0 h-full">
       <div className="p-4 border-b border-surface-300">
         <div className="relative mb-4">
           <Search className="absolute left-2 top-2.5 h-5 w-5 text-surface-500" />
