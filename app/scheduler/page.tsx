@@ -1,3 +1,4 @@
+// page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -32,6 +33,7 @@ import '../../styles/Calendar.css';
 
 import { Course, Section, Subject } from '../../utils/interfaces';
 
+
 export default function ScheduleBuilderPage() {
   const [groupedCourses, setGroupedCourses] = useState<Course[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -53,6 +55,8 @@ export default function ScheduleBuilderPage() {
   const [savedCourseColors, setSavedCourseColors] = useState<{ [key: string]: string }>({});
 
   const [courseColors, setCourseColors] = useState<{ [key: string]: string }>({});
+  const [timetables, setTimetables] = useState<any[]>([]);
+  const [currentTimetableName, setCurrentTimetableName] = useState<string>('My Timetable');
 
   const locales = {
     'en-US': enUS,
@@ -255,7 +259,7 @@ export default function ScheduleBuilderPage() {
     );
 
     if (hasConflict) {
-      toast.error('Time conflict detected with existing selections');
+      toast.error('Time conflict detected with existing courses');
       return;
     }
 
@@ -360,6 +364,7 @@ export default function ScheduleBuilderPage() {
   );
 
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const events = selectedSections
@@ -402,6 +407,7 @@ export default function ScheduleBuilderPage() {
               start: startDateTime,
               end: endDateTime,
               color: eventColor,
+              crn: section.crn, // Add CRN to identify the section
             };
           })
           .filter(Boolean);
@@ -468,6 +474,115 @@ export default function ScheduleBuilderPage() {
       .replace(/\n/g, '\\n');
   };
 
+  const fetchTimetables = () => {
+    if (typeof window !== 'undefined') {
+      const storedTimetables = localStorage.getItem('timetables');
+      if (storedTimetables) {
+        const parsedTimetables = JSON.parse(storedTimetables);
+        setTimetables(parsedTimetables);
+        // Load the most recent timetable by default
+        const latestTimetable = parsedTimetables[parsedTimetables.length - 1];
+        if (latestTimetable) {
+          loadTimetable(latestTimetable.name);
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchCourses();
+    fetchTimetables();
+  }, []);
+
+  const saveTimetable = (name: string) => {
+    
+    try {
+      if (!name.trim()) {
+        toast.error('Please enter a valid timetable name');
+        return;
+      }
+      const existingTimetable = timetables.find((tt) => tt.name === name);
+      if (existingTimetable && name !== currentTimetableName) {
+        toast.error('A timetable with this name already exists');
+        return;
+          }
+      if (typeof window !== 'undefined') {
+        const crns = selectedSections.map((section) => section.crn);
+        const colors = courseColors;
+        const timetableData = {
+          name,
+          crns,
+          colors,
+          timestamp: new Date().toISOString(),
+        };
+        
+
+        let updatedTimetables = [...timetables.filter((tt) => tt.name !== name), timetableData];
+        setTimetables(updatedTimetables);
+        localStorage.setItem('timetables', JSON.stringify(updatedTimetables));
+        setCurrentTimetableName(name);
+        toast.success(`Timetable "${name}" saved successfully!`);
+      }
+    } catch (error) {
+      console.error('Failed to save timetable:', error);
+      toast.error('Failed to save timetable');
+    }
+  };
+
+  const loadTimetable = (name: string) => {
+    const timetable = timetables.find((tt) => tt.name === name);
+    if (timetable) {
+      setCurrentTimetableName(name);
+      const { crns, colors } = timetable;
+
+      const sections: Section[] = [];
+
+      for (const crn of crns) {
+        const section = findSectionByCrn(crn, groupedCourses);
+        if (section) {
+          sections.push(section);
+        }
+      }
+
+      setSelectedSections(sections);
+
+      const sectionsByType: { [type: string]: Section } = {};
+      sections.forEach((section) => {
+        const key = section.schedule_type;
+        sectionsByType[key] = section;
+      });
+      setSelectedSectionsByType(sectionsByType);
+
+      setSavedCourseColors(colors);
+
+      toast.success(`Loaded timetable "${name}"`);
+    }
+  };
+
+  const createNewTimetable = () => {
+    setSelectedSections([]);
+    setSelectedSectionsByType({});
+    setSavedCourseColors({});
+    setCurrentTimetableName(`Timetable ${timetables.length + 1}`);
+    toast.success('Created new timetable');
+  };
+
+  const deleteTimetable = (name: string) => {
+    const updatedTimetables = timetables.filter((tt) => tt.name !== name);
+    setTimetables(updatedTimetables);
+    localStorage.setItem('timetables', JSON.stringify(updatedTimetables));
+
+    if (name === currentTimetableName) {
+      // If the current timetable is deleted, load the default or create a new one
+      if (updatedTimetables.length > 0) {
+        loadTimetable(updatedTimetables[0].name);
+      } else {
+        createNewTimetable();
+      }
+    }
+    toast.success(`Deleted timetable "${name}"`);
+  };
+
   const handleSaveTimetable = () => {
     try {
       if (typeof window !== 'undefined') {
@@ -486,6 +601,72 @@ export default function ScheduleBuilderPage() {
     }
   };
 
+  // ** New function to handle double-click event **
+  const handleEventDoubleClick = (event: any) => {
+    const crn = event.crn;
+    // Remove the section from selectedSections
+    setSelectedSections((prevSections) =>
+      prevSections.filter((section) => section.crn !== crn)
+    );
+    // Remove from selectedSectionsByType
+    setSelectedSectionsByType((prev) => {
+      const newSelectedSectionsByType = { ...prev };
+      for (let type in newSelectedSectionsByType) {
+        if (newSelectedSectionsByType[type]?.crn === crn) {
+          newSelectedSectionsByType[type] = null;
+        }
+      }
+      return newSelectedSectionsByType;
+    });
+    toast.success('Event removed from timetable');
+  };
+
+// Function to handle event selection from the calendar
+const handleEventSelect = (event: any) => {
+  const crn = event.crn;
+  const section = selectedSections.find((s) => s.crn === crn);
+
+  if (section) {
+    const courseKey = `${section.subject}-${section.course_number}`;
+    const course = groupedCourses.find(
+      (c) => `${c.subject}-${c.course_number}` === courseKey
+    );
+
+    if (course) {
+      setSelectedCourse(course);
+
+      setSelectedSectionsByType((prev) => {
+        const updated = { ...prev };
+        updated[section.schedule_type] = section;
+        return updated;
+      });
+
+      if (isMobile) {
+        setRightSidebarOpen(true);
+      }
+    }
+  }
+};
+
+const handleDeleteTimetable = () => {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('savedTimetable');
+      setSelectedSections([]);
+      setSelectedSectionsByType({});
+      toast.success('Timetable deleted successfully!');
+    }
+  } catch (error) {
+    console.error('Failed to delete timetable:', error);
+    toast.error('Failed to delete timetable');
+  }
+};
+
+const variants = {
+  open: { opacity: 1, x: 0 },
+  closed: { opacity: 0, x: "-100%" },
+}
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-surface-100 text-white">
@@ -500,18 +681,22 @@ export default function ScheduleBuilderPage() {
   return (
     <>
       <Toaster position="top-center" richColors />
-      <div className="flex flex-col h-screen bg-surface-100 text-white">
-        <TopBar />
-        <div className="border-b border-surface-300 mt-16"></div> {/* Separator line */}
-        <div className={`flex flex-1 h-full ${isMobile ? 'overflow-hidden' : ''}`}>
+      <div className="flex flex-col h-screen overflow-hidden bg-surface-100 text-white">
+        <TopBar
+          isMobile={isMobile}
+          isMenuOpen={isMenuOpen}
+          setIsMenuOpen={setIsMenuOpen}
+        />
+        <div className="border-b border-surface-300 mt-16"></div>
+        <div className="flex flex-1 h-full overflow-hidden">
           {/* Left Sidebar */}
           <div
             className={`${
               isMobile
                 ? `transform transition-transform duration-300 ease-in-out ${
                     leftSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                  } absolute z-20 top-0 bottom-0 left-0 w-64`
-                : 'w-64'
+                  } absolute z-20 top-16 bottom-0 left-0 w-64 overflow-y-auto`
+                : 'w-64 overflow-y-auto'
             }`}
           >
             <LeftSidebar
@@ -545,11 +730,13 @@ export default function ScheduleBuilderPage() {
             </div>
           )}
           {/* Center - Calendar */}
-          <div className="flex-grow ">
+          <div className="flex-grow overflow-hidden">
             <CalendarComponent
               calendarEvents={calendarEvents}
               eventStyleGetter={eventStyleGetter}
               isMobile={isMobile}
+              onEventDoubleClick={handleEventDoubleClick}
+              onSelectEvent={handleEventSelect} // Pass the handler
             />
           </div>
           {/* Right Sidebar */}
@@ -558,9 +745,10 @@ export default function ScheduleBuilderPage() {
               isMobile
                 ? `transform transition-transform duration-300 ease-in-out ${
                     rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-                  } absolute z-20 top-0 bottom-0 right-0 w-64`
-                : 'w-64'
+                  } absolute z-20 top-16 bottom-0 right-0 w-64 overflow-y-auto`
+                : 'w-64 overflow-y-auto' 
             }`}
+            style={{ display: isMobile && !rightSidebarOpen ? 'none' : 'block' }}
           >
             <RightSidebar
               selectedCourse={selectedCourse}
@@ -568,7 +756,13 @@ export default function ScheduleBuilderPage() {
               selectedSectionsByType={selectedSectionsByType}
               handleSectionSelection={handleSectionSelection}
               handleExportICS={handleExportICS}
-              handleSaveTimetable={handleSaveTimetable}
+              handleSaveTimetable={() => saveTimetable(currentTimetableName)}
+              handleDeleteTimetable={() => deleteTimetable(currentTimetableName)}
+              timetables={timetables}
+              currentTimetableName={currentTimetableName}
+              setCurrentTimetableName={setCurrentTimetableName}
+              loadTimetable={loadTimetable}
+              createNewTimetable={createNewTimetable}
             />
           </div>
           {/* Right Swipe Arrow */}
@@ -580,6 +774,7 @@ export default function ScheduleBuilderPage() {
               onClick={() => {
                 setRightSidebarOpen(!rightSidebarOpen);
                 setLeftSidebarOpen(false);
+                
               }}
             >
               {rightSidebarOpen ? (

@@ -1,5 +1,4 @@
-// components/CalendarComponent.tsx
-
+// CalendarComponent.tsx
 'use client';
 
 import React from 'react';
@@ -12,7 +11,6 @@ import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 
-// ** Define locales and localizer for react-big-calendar **
 const locales = {
   'en-US': enUS,
 };
@@ -25,12 +23,12 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-// ** Define the props interface **
 interface CalendarEvent {
   title: string;
   start: Date;
   end: Date;
   color?: string;
+  crn: number;
 }
 
 interface CalendarComponentProps {
@@ -42,14 +40,17 @@ interface CalendarComponentProps {
     isSelected: boolean
   ) => { style: React.CSSProperties };
   isMobile: boolean;
+  onEventDoubleClick?: (event: CalendarEvent) => void;
+  onSelectEvent?: (event: CalendarEvent) => void;
 }
 
 const CalendarComponent: React.FC<CalendarComponentProps> = ({
   calendarEvents,
   eventStyleGetter,
   isMobile,
+  onEventDoubleClick,
+  onSelectEvent,
 }) => {
-  // ** Default event style getter if not provided **
   const defaultEventStyleGetter = (
     event: CalendarEvent,
     start: Date,
@@ -70,7 +71,6 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
     };
   };
 
-  // ** Define custom date cell wrapper for time slot styling **
   const ColoredDateCellWrapper = ({ children }: any) =>
     React.cloneElement(React.Children.only(children), {
       style: {
@@ -78,30 +78,30 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
       },
     });
 
-    return (
-      <div id="calendar-container" className="flex flex-col h-full overflow-hidden">
-        {/* React Big Calendar Component */}
-        <Calendar
-          localizer={localizer}
-          events={calendarEvents}
-          defaultView="week"
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: '100%' }}
-          eventPropGetter={eventStyleGetter || defaultEventStyleGetter}
-          components={{
-            timeSlotWrapper: ColoredDateCellWrapper,
-            header: CustomHeader,
-          }}
-          views={['week']}
-          step={60}
-          timeslots={1}
-          min={new Date(0, 0, 0, 7, 0, 0)}
-          max={new Date(0, 0, 0, 22, 0, 0)}
-          toolbar={false} // Hide the default toolbar
-        />
-      </div>
-    );
-  };
-
+  return (
+    <div id="calendar-container" className="flex flex-col h-full overflow-hidden">
+      <Calendar
+        localizer={localizer}
+        events={calendarEvents}
+        defaultView="week"
+        startAccessor="start"
+        endAccessor="end"
+        style={{ height: '100%' }}
+        eventPropGetter={eventStyleGetter || defaultEventStyleGetter}
+        components={{
+          timeSlotWrapper: ColoredDateCellWrapper,
+          header: CustomHeader,
+        }}
+        views={['week']}
+        step={60}
+        timeslots={1}
+        min={new Date(0, 0, 0, 7, 0, 0)}
+        max={new Date(0, 0, 0, 22, 0, 0)}
+        toolbar={false} // Hide the default toolbar
+        onDoubleClickEvent={onEventDoubleClick}
+        onSelectEvent={onSelectEvent}
+      />
+    </div>
+  );
+};
 export default CalendarComponent;

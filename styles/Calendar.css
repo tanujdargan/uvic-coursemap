@@ -41,9 +41,6 @@
   border-left: 1px solid #5f6368;
 }
 
-.rbc-time-header-cell:first-child {
-  border-left: none;
-}
 
 .rbc-day-slot .rbc-time-slot {
   border-top: 1px solid #5f6368;
@@ -139,7 +136,8 @@
 }
 
 .rbc-time-header-cell {
-  padding: 8px 0;
+  padding-bottom: 2px 0;
+  padding-top: 4px;
   text-align: center;
   font-weight: bold;
 }

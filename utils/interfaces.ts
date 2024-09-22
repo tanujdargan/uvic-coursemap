@@ -15,6 +15,7 @@ export interface Section {
   instructor: string;
   instructional_method: string;
   units: number;
+  additional_information?: string;
 }
 
 export interface Course {
