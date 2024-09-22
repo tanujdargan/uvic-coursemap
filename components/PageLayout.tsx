@@ -5,7 +5,7 @@ interface PageLayoutProps {
   children: React.ReactNode
 }
 
-export default function PageLayout() {
+export default PageLayout() {
 
 const [isMobile, setIsMobile] = useState<boolean>(false);
 const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
