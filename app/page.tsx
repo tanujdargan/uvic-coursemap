@@ -10,6 +10,8 @@ import { useState, useEffect, useRef } from 'react';
 export default function Home() {
   const [videoSource, setVideoSource] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const determineVideoSource = () => {
@@ -64,7 +66,10 @@ export default function Home() {
           </video>
         )}
       </div>
-      <TopBar />
+      <TopBar 
+              isMobile={isMobile}
+              isMenuOpen={isMenuOpen}
+              setIsMenuOpen={setIsMenuOpen}/>
       </motion.div>
       <div className="flex-grow flex items-center justify-center">
         <div className="z-10 text-center mt-32">
