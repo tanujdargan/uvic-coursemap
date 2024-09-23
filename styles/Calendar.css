@@ -76,7 +76,7 @@
 .rbc-event {
   background-color: #121212;
   color: #e8eaed;
-  border-radius: 4px;
+  border-radius: 2px;
   padding: 2px 4px;
   border: none;
 }
@@ -123,7 +123,7 @@
 
 /* Adjustments for the Week View */
 .rbc-time-view {
-  border: none;
+  border: none !important;
 }
 
 .rbc-time-view .rbc-allday-cell {
@@ -137,7 +137,7 @@
 
 .rbc-time-header-cell {
   padding-bottom: 2px 0;
-  padding-top: 4px;
+  padding-top: 0px;
   text-align: center;
   font-weight: bold;
 }

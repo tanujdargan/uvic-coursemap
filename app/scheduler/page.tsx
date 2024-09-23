@@ -112,17 +112,7 @@ export default function ScheduleBuilderPage() {
       });
     }
   };
-
-  const findSectionByCrn = (crn: number) => {
-    for (const course of groupedCourses) {
-      const section = course.sections.find((sec) => sec.crn === crn);
-      if (section) {
-        return section;
-      }
-    }
-    return null;
-  };
-
+  
   const eventColors = [
     '#039BE5', // Blue
     '#D81B60', // Pink
@@ -362,7 +352,7 @@ export default function ScheduleBuilderPage() {
   return (
     <>
       <Toaster position="top-center" richColors />
-      <div className="flex flex-col h-screen overflow-hidden bg-surface-100 text-white">
+      <div className="flex flex-col h-screen overflow-hidden bg-surface-100 text-white" style={{ overflowX: 'hidden' }}>
         <TopBar
           isMobile={isMobile}
           isMenuOpen={isMenuOpen}
@@ -372,8 +362,8 @@ export default function ScheduleBuilderPage() {
         <div
           className="flex flex-1 h-full overflow-hidden"
           style={{
-            paddingTop: isTopBarVisible ? '64px' : '0px',
-            transition: 'padding-top 0.3s ease-in-out',
+            paddingTop: isTopBarVisible ? '64px' : '0px', // Adjust padding based on TopBar visibility
+            transition: 'padding-top 0.3s ease-in-out', // Smooth transition for padding change
           }}
         >
           {/* Left Sidebar */}
@@ -428,15 +418,15 @@ export default function ScheduleBuilderPage() {
           </div>
           {/* Right Sidebar */}
           <div
-            className={`${
-              isMobile
-                ? `transform transition-transform duration-300 ease-in-out ${
-                    rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-                  } absolute z-20 top-16 bottom-0 right-0 w-64 overflow-y-auto`
-                : 'w-64 overflow-y-auto'
-            }`}
-            style={{ display: isMobile && !rightSidebarOpen ? 'none' : 'block' }}
-          >
+              className={`fixed top-16 bottom-0 right-0 w-64 overflow-y-auto transition-transform duration-300 ease-in-out z-20`}
+              style={{
+                transform: isMobile
+                  ? rightSidebarOpen
+                    ? 'translateX(0%)'
+                    : 'translateX(100%)'
+                  : 'translateX(0%)',
+              }}
+            >
             <RightSidebar
               selectedCourse={selectedCourse}
               selectedTerm={selectedTerm}

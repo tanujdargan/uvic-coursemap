@@ -54,7 +54,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
           <Search className="absolute left-2 top-2.5 h-5 w-5 text-surface-500" />
           <Input
             type="search"
-            placeholder="Search courses or subjects"
+            placeholder="Search for courses"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 bg-surface-300 border-surface-400 text-white placeholder-surface-500 rounded-md"

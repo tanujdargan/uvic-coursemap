@@ -13,6 +13,7 @@
   /* Apply dark theme */
   body {
     @apply bg-surface-100 text-white;
+    overflow-x: hidden;
   }
 
   /* Custom CSS variables */

@@ -86,7 +86,7 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
         defaultView="week"
         startAccessor="start"
         endAccessor="end"
-        style={{ height: '100%' }}
+        style={{ height: '100%', width: '70vw'}}
         eventPropGetter={eventStyleGetter || defaultEventStyleGetter}
         components={{
           timeSlotWrapper: ColoredDateCellWrapper,
