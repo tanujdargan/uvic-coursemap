@@ -17,7 +17,7 @@ import { useTimetable } from '@/hooks/useTimetable';
 import { useTopBarVisibility } from '@/hooks/useTopBarVisibility';
 
 import { generateICS } from '@/utils/icsUtils';
-import { generateCalendarEvents } from '@/utils/CalendarUtils'; // Corrected casing
+import { generateCalendarEvents } from '../../utils/calendarUtils';
 import { convertTermToString } from '@/utils/termUtils';
 import { hasTimeConflict } from '@/utils/sectionUtils';
 
