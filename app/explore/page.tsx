@@ -70,6 +70,7 @@ export default function ExplorePage() {
   const [isTabActive, setIsTabActive] = useState(true);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  const [isTopBarVisible, setIsTopBarVisible] = useState(true);
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -176,10 +177,11 @@ export default function ExplorePage() {
 
   return (
     <div className="flex flex-col h-screen bg-white-900 text-white">
-      <TopBar 
+    <TopBar
         isMobile={isMobile}
         isMenuOpen={isMenuOpen}
         setIsMenuOpen={setIsMenuOpen}
+        isTopBarVisible={isTopBarVisible} // Pass the prop
       />
       <div className="border-b border-gray-800 mt-16"></div>
       <div className="flex flex-1 overflow-hidden">

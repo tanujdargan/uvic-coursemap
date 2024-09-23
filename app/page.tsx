@@ -12,6 +12,7 @@ export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  const [isTopBarVisible, setIsTopBarVisible] = useState(true);
 
   useEffect(() => {
     const determineVideoSource = () => {
@@ -66,10 +67,12 @@ export default function Home() {
           </video>
         )}
       </div>
-      <TopBar 
-              isMobile={isMobile}
-              isMenuOpen={isMenuOpen}
-              setIsMenuOpen={setIsMenuOpen}/>
+      <TopBar
+        isMobile={isMobile}
+        isMenuOpen={isMenuOpen}
+        setIsMenuOpen={setIsMenuOpen}
+        isTopBarVisible={isTopBarVisible} // Pass the prop
+      />
       </motion.div>
       <div className="flex-grow flex items-center justify-center">
         <div className="z-10 text-center mt-32">

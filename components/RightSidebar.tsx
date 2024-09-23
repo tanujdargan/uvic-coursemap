@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Section, Course } from '../utils/interfaces';
 
 interface RightSidebarProps {
@@ -15,7 +15,7 @@ interface RightSidebarProps {
   handleDeleteTimetable: () => void;
   timetables: any[];
   currentTimetableName: string;
-  setCurrentTimetableName: React.Dispatch<React.SetStateAction<string>>;
+  setCurrentTimetableName: (name: string) => void;
   loadTimetable: (name: string) => void;
   createNewTimetable: () => void;
 }
@@ -42,7 +42,12 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   const [showDetails, setShowDetails] = useState(false);
   const [timetableNameInput, setTimetableNameInput] = useState(currentTimetableName);
 
+  useEffect(() => {
+    setTimetableNameInput(currentTimetableName);
+  }, [currentTimetableName]);
+
   return (
+    
     <div className="bg-surface-200 h-full p-4 overflow-y-auto">
       {selectedCourse ? (
         <>
@@ -124,15 +129,27 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
        {/* Timetable Actions */}
       <div className="mt-4">
         {/* Timetable Name Input */}
-        <div className="mb-2">
-          <label className="block text-sm font-medium mb-1">Timetable Name:</label>
-          <input
-            type="text"
-            className="w-full bg-surface-300 border-surface-400 text-white placeholder-surface-500 rounded-md p-2"
-            value={timetableNameInput}
-            onChange={(e) => setTimetableNameInput(e.target.value)}
-          />
-        </div>
+        <div className="timetable-name-container" style={{ paddingBottom: '10px'}}>
+            <label htmlFor="timetable-name">Timetable Name:</label>
+            <div style={{paddingBottom: '4px'}}></div>
+            <input
+              id="timetable-name"
+              type="text"
+              value={currentTimetableName}
+              onChange={(e) => setCurrentTimetableName(e.target.value)}
+              className="timetable-name-input"
+              style={{
+                backgroundColor: 'gray',
+                border: 'none',
+                color: 'inherit',
+                font: 'inherit',
+                margin: '0',
+                padding: '2px',
+                width: '100%',
+                borderRadius: '4px',
+              }}
+            />
+          </div>
 
         {/* Save Timetable Button */}
         <button
@@ -169,7 +186,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
         {/* Delete Timetable Button */}
         <button
           className="mt-2 w-full bg-red-600 hover:bg-red-500 text-white py-2 px-4 rounded"
-          onClick={() => deleteTimetable(currentTimetableName)}
+          onClick={handleDeleteTimetable} // Use the prop directly
         >
           Delete Timetable
         </button>
@@ -185,5 +202,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
     </div>
   );
 };
+
+
 
 export default RightSidebar;

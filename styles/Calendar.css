@@ -87,7 +87,7 @@
 
 /* Now Indicator (Current Time Line) */
 .rbc-current-time-indicator {
-  background-color: #fbbc05;
+  background-color: #fb0905 !important;
 }
 
 /* Today's Highlight */
@@ -226,7 +226,7 @@
 .rbc-time-column:last-child,
 .rbc-time-header-content,
 .rbc-time-slot:last-child {
-  border: none !important;
+  border-left: none !important;
 }
 
 .rbc-time-gutter {
