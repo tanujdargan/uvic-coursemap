@@ -71,10 +71,16 @@ export default function Home() {
         isMobile={isMobile}
         isMenuOpen={isMenuOpen}
         setIsMenuOpen={setIsMenuOpen}
-        isTopBarVisible={isTopBarVisible} // Pass the prop
+        isTopBarVisible={isTopBarVisible}
       />
       </motion.div>
-      <div className="flex-grow flex items-center justify-center">
+      <div 
+        className="flex-grow flex items-center justify-center"
+        style={{
+          paddingTop: isTopBarVisible ? '64px' : '0px',
+          transition: 'padding-top 0.3s ease-in-out',
+        }}
+      >
         <div className="z-10 text-center mt-32">
           <motion.div initial="hidden" animate="visible" variants={{
             hidden: { opacity: 0, y: -50 },
@@ -89,7 +95,7 @@ export default function Home() {
               hidden: { opacity: 0 },
               visible: { opacity: 1, transition: { delay: 0.25 } }
             }}>
-              <Button asChild variant="secondary">
+              <Button asChild variant="secondary" className="bg-black bg-opacity-75 rounded-lg">
                 <Link href="/explore">Explore Courses</Link>
               </Button>
             </motion.div>
@@ -97,7 +103,7 @@ export default function Home() {
               hidden: { opacity: 0 },
               visible: { opacity: 1, transition: { delay: 0.30 } }
             }}>
-              <Button asChild variant="secondary">
+              <Button asChild variant="secondary" className="bg-black bg-opacity-75 rounded-lg">
                 <Link href="/scheduler">Create Timetable</Link>
               </Button>
             </motion.div>

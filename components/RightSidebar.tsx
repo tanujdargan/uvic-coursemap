@@ -18,6 +18,7 @@ interface RightSidebarProps {
   setCurrentTimetableName: (name: string) => void;
   loadTimetable: (name: string) => void;
   createNewTimetable: () => void;
+  handleDeleteCourse: (courseToDelete: Course) => void;
 }
 
 const deleteTimetable = (timetableName: string) => {
@@ -38,17 +39,19 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   setCurrentTimetableName,
   loadTimetable,
   createNewTimetable,
+  handleDeleteCourse,
 }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [timetableNameInput, setTimetableNameInput] = useState(currentTimetableName);
-
+  
   useEffect(() => {
     setTimetableNameInput(currentTimetableName);
   }, [currentTimetableName]);
 
+  console.log('Selected Course:', selectedCourse);
+
   return (
-    
-    <div className="bg-surface-200 h-full p-4 overflow-y-auto">
+    <div className="bg-surface-100 h-full w-full p-4 overflow-y-auto">
       {selectedCourse ? (
         <>
           <h2 className="text-xl font-bold mb-2">
@@ -191,6 +194,15 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
           Delete Timetable
         </button>
 
+          {/* Delete Course Button */}
+          {selectedCourse && (
+            <button
+              className="mt-2 w-full bg-red-600 hover:bg-red-500 text-white py-2 px-4 rounded"
+              onClick={() => handleDeleteCourse(selectedCourse)}>
+              Delete Course
+            </button>
+          )}
+
         {/* Export to ICS Button */}
         <button
           className="mt-2 w-full bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded"
@@ -202,7 +214,5 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
     </div>
   );
 };
-
-
 
 export default RightSidebar;

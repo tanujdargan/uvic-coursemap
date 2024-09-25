@@ -25,6 +25,7 @@ import { Course, Section } from '@/utils/interfaces';
 
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../../styles/Calendar.css';
+import 'react-resizable/css/styles.css';
 
 export default function ScheduleBuilderPage() {
   const {
@@ -42,10 +43,6 @@ export default function ScheduleBuilderPage() {
     setSelectedSections,
     selectedSectionsByType,
     setSelectedSectionsByType,
-    courseColors,
-    setCourseColors,
-    savedCourseColors,
-    setSavedCourseColors,
     timetables,
     currentTimetableName,
     setCurrentTimetableName,
@@ -53,6 +50,8 @@ export default function ScheduleBuilderPage() {
     loadTimetable,
     createNewTimetable,
     deleteTimetable,
+    eventColors,
+    setEventColors,
   } = useTimetable(groupedCourses);
 
   const isTopBarVisible = useTopBarVisibility();
@@ -112,8 +111,8 @@ export default function ScheduleBuilderPage() {
       });
     }
   };
-  
-  const eventColors = [
+
+  const eventColorPalette = [
     '#039BE5', // Blue
     '#D81B60', // Pink
     '#43A047', // Green
@@ -124,29 +123,12 @@ export default function ScheduleBuilderPage() {
     '#1E88E5', // Light Blue
   ];
 
-  useEffect(() => {
-    const colorsMap: { [key: string]: string } = { ...courseColors };
-
-    groupedCourses.forEach((course) => {
-      const key = `${course.subject}-${course.course_number}`;
-      if (!colorsMap[key]) {
-        const savedColor = savedCourseColors[key];
-        if (savedColor) {
-          colorsMap[key] = savedColor;
-        } else {
-          colorsMap[key] = eventColors[Math.floor(Math.random() * eventColors.length)];
-        }
-      }
-    });
-    setCourseColors(colorsMap);
-  }, [groupedCourses, savedCourseColors]);
-
   const eventStyleGetter = (event: any, start: any, end: any, isSelected: boolean) => {
     const backgroundColor = event.color || '#3c4043';
     const style = {
       backgroundColor,
       borderRadius: '4px',
-      opacity: 0.9,
+      opacity: 1,
       color: 'white',
       border: '0px',
       display: 'block',
@@ -191,6 +173,18 @@ export default function ScheduleBuilderPage() {
       ...initialSelections,
     }));
 
+    // Assign colors to each new section
+    newSelectedSections.forEach((section) => {
+      setEventColors((prevColors) => {
+        if (!prevColors[section.crn]) {
+          const color =
+            eventColorPalette[Math.floor(Math.random() * eventColorPalette.length)];
+          return { ...prevColors, [section.crn]: color };
+        }
+        return prevColors;
+      });
+    });
+
     setSelectedCourse(course);
 
     if (isMobile) {
@@ -231,6 +225,16 @@ export default function ScheduleBuilderPage() {
         return newSections;
       });
 
+      // Assign a color to the event
+      setEventColors((prevColors) => {
+        if (!prevColors[selectedSection.crn]) {
+          const color =
+            eventColorPalette[Math.floor(Math.random() * eventColorPalette.length)];
+          return { ...prevColors, [selectedSection.crn]: color };
+        }
+        return prevColors;
+      });
+
       toast.success(
         `${selectedSection.subject} ${selectedSection.course_number} - Section ${selectedSection.section} added`,
         {
@@ -243,6 +247,13 @@ export default function ScheduleBuilderPage() {
               }));
 
               setSelectedSections((prev) => prev.filter((s) => s.crn !== crn));
+
+              // Remove color
+              setEventColors((prevColors) => {
+                const newColors = { ...prevColors };
+                delete newColors[crn];
+                return newColors;
+              });
             },
           },
         }
@@ -251,9 +262,9 @@ export default function ScheduleBuilderPage() {
   };
 
   useEffect(() => {
-    const events = generateCalendarEvents(selectedSections, courseColors);
+    const events = generateCalendarEvents(selectedSections, eventColors);
     setCalendarEvents(events);
-  }, [selectedSections, courseColors]);
+  }, [selectedSections, eventColors]);
 
   const handleExportICS = () => {
     if (calendarEvents.length === 0) {
@@ -287,6 +298,14 @@ export default function ScheduleBuilderPage() {
       }
       return newSelectedSectionsByType;
     });
+
+    // Remove color
+    setEventColors((prevColors) => {
+      const newColors = { ...prevColors };
+      delete newColors[crn];
+      return newColors;
+    });
+
     toast.success('Event removed from timetable');
   };
 
@@ -322,7 +341,9 @@ export default function ScheduleBuilderPage() {
     .filter(Boolean);
 
   const filteredCourses = groupedCourses.filter((course) => {
-    const courseString = `${course.subject || ''} ${course.course_number || ''} ${course.course_name || ''}`.toLowerCase();
+    const courseString = `${course.subject || ''} ${course.course_number || ''} ${
+      course.course_name || ''
+    }`.toLowerCase();
     const matchesSearch = searchWords.every((word) => courseString.includes(word));
     const matchesTerm = selectedTerm
       ? course.sections.some((section) => section.term === parseInt(selectedTerm))
@@ -330,13 +351,62 @@ export default function ScheduleBuilderPage() {
     return matchesSearch && matchesTerm;
   });
 
-  const subjectIdsWithMatchingCourses = new Set(filteredCourses.map((course) => course.subject));
+  const subjectIdsWithMatchingCourses = new Set(
+    filteredCourses.map((course) => course.subject)
+  );
 
   const filteredSubjects = subjects.filter(
     (subject) =>
       (subject.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
       subjectIdsWithMatchingCourses.has(subject.id)
   );
+
+  const handleDeleteCourse = (courseToDelete: Course) => {
+    // Filter out sections related to the course
+    const updatedSections = selectedSections.filter(
+      (section) =>
+        section.subject !== courseToDelete.subject ||
+        section.course_number !== courseToDelete.course_number
+    );
+    setSelectedSections(updatedSections);
+
+    // Remove course-related entries from selectedSectionsByType
+    const updatedSectionsByType = { ...selectedSectionsByType };
+    Object.keys(updatedSectionsByType).forEach((type) => {
+      const section = updatedSectionsByType[type];
+      if (
+        section?.subject === courseToDelete.subject &&
+        section?.course_number === courseToDelete.course_number
+      ) {
+        updatedSectionsByType[type] = null;
+      }
+    });
+    setSelectedSectionsByType(updatedSectionsByType);
+
+    // Remove colors associated with the course's sections
+    const updatedEventColors = { ...eventColors };
+    selectedSections.forEach((section) => {
+      if (
+        section.subject === courseToDelete.subject &&
+        section.course_number === courseToDelete.course_number
+      ) {
+        delete updatedEventColors[section.crn];
+      }
+    });
+    setEventColors(updatedEventColors);
+
+    // Optionally, update selectedCourse if the deleted course was the selected one
+    if (
+      selectedCourse?.subject === courseToDelete.subject &&
+      selectedCourse?.course_number === courseToDelete.course_number
+    ) {
+      setSelectedCourse(null);
+    }
+
+    toast.success(
+      `${courseToDelete.subject} ${courseToDelete.course_number} has been removed from your timetable`
+    );
+  };
 
   if (loading) {
     return (
@@ -352,7 +422,10 @@ export default function ScheduleBuilderPage() {
   return (
     <>
       <Toaster position="top-center" richColors />
-      <div className="flex flex-col h-screen overflow-hidden bg-surface-100 text-white" style={{ overflowX: 'hidden' }}>
+      <div
+        className="flex flex-col h-screen overflow-hidden bg-surface-100 text-white"
+        style={{ overflowX: 'hidden' }}
+      >
         <TopBar
           isMobile={isMobile}
           isMenuOpen={isMenuOpen}
@@ -360,19 +433,19 @@ export default function ScheduleBuilderPage() {
           isTopBarVisible={isTopBarVisible}
         />
         <div
-          className="flex flex-1 h-full overflow-hidden"
+          className="flex flex-1 h-full overflow-hidden relative"
           style={{
-            paddingTop: isTopBarVisible ? '64px' : '0px', // Adjust padding based on TopBar visibility
-            transition: 'padding-top 0.3s ease-in-out', // Smooth transition for padding change
+            paddingTop: isTopBarVisible ? '64px' : '0px',
+            transition: 'padding-top 0.3s ease-in-out',
           }}
         >
           {/* Left Sidebar */}
           <div
-            className={`${
+            className={`flex-shrink-0 ${
               isMobile
                 ? `transform transition-transform duration-300 ease-in-out ${
                     leftSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                  } absolute z-20 top-16 bottom-0 left-0 w-64 overflow-y-auto`
+                  } absolute z-20 top-0 bottom-0 left-0 w-64 overflow-y-auto`
                 : 'w-64 overflow-y-auto'
             }`}
           >
@@ -418,15 +491,14 @@ export default function ScheduleBuilderPage() {
           </div>
           {/* Right Sidebar */}
           <div
-              className={`fixed top-16 bottom-0 right-0 w-64 overflow-y-auto transition-transform duration-300 ease-in-out z-20`}
-              style={{
-                transform: isMobile
-                  ? rightSidebarOpen
-                    ? 'translateX(0%)'
-                    : 'translateX(100%)'
-                  : 'translateX(0%)',
-              }}
-            >
+            className={`flex-shrink-0 ${
+              isMobile
+                ? `transform transition-transform duration-300 ease-in-out ${
+                    rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+                  } absolute z-20 top-0 bottom-0 right-0 w-64 overflow-y-auto`
+                : 'w-64 overflow-y-auto'
+            }`}
+          >
             <RightSidebar
               selectedCourse={selectedCourse}
               selectedTerm={selectedTerm}
@@ -440,6 +512,7 @@ export default function ScheduleBuilderPage() {
               setCurrentTimetableName={setCurrentTimetableName}
               loadTimetable={loadTimetable}
               createNewTimetable={createNewTimetable}
+              handleDeleteCourse={handleDeleteCourse}
             />
           </div>
           {/* Right Swipe Arrow */}

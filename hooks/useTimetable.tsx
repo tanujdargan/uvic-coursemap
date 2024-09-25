@@ -1,15 +1,16 @@
-// hooks/useTimetable.tsx
 import { useState, useEffect } from 'react';
 import { Course, Section } from '@/utils/interfaces';
 import { toast } from 'sonner';
 
 export function useTimetable(groupedCourses: Course[]) {
   const [selectedSections, setSelectedSections] = useState<Section[]>([]);
-  const [selectedSectionsByType, setSelectedSectionsByType] = useState<{ [type: string]: Section | null }>({});
-  const [courseColors, setCourseColors] = useState<{ [key: string]: string }>({});
-  const [savedCourseColors, setSavedCourseColors] = useState<{ [key: string]: string }>({});
+  const [selectedSectionsByType, setSelectedSectionsByType] = useState<{
+    [type: string]: Section | null;
+  }>({});
+  const [eventColors, setEventColors] = useState<{ [crn: number]: string }>({});
   const [timetables, setTimetables] = useState<any[]>([]);
-  const [currentTimetableName, setCurrentTimetableName] = useState<string>('My Timetable');
+  const [currentTimetableName, setCurrentTimetableName] =
+    useState<string>('My Timetable');
   const [isTimetableLoaded, setIsTimetableLoaded] = useState<boolean>(false);
 
   useEffect(() => {
@@ -42,7 +43,6 @@ export function useTimetable(groupedCourses: Course[]) {
     }
   };
 
-
   const saveTimetable = (name: string) => {
     try {
       if (!name.trim()) {
@@ -56,7 +56,7 @@ export function useTimetable(groupedCourses: Course[]) {
       }
       if (typeof window !== 'undefined') {
         const crns = selectedSections.map((section) => section.crn);
-        const colors = courseColors;
+        const colors = eventColors;
         const timetableData = {
           name,
           crns,
@@ -64,7 +64,10 @@ export function useTimetable(groupedCourses: Course[]) {
           timestamp: new Date().toISOString(),
         };
 
-        const updatedTimetables = [...timetables.filter((tt) => tt.name !== name), timetableData];
+        const updatedTimetables = [
+          ...timetables.filter((tt) => tt.name !== name),
+          timetableData,
+        ];
         setTimetables(updatedTimetables);
         localStorage.setItem('timetables', JSON.stringify(updatedTimetables));
         setCurrentTimetableName(name);
@@ -76,7 +79,7 @@ export function useTimetable(groupedCourses: Course[]) {
     }
   };
 
-const loadTimetable = (name: string) => {
+  const loadTimetable = (name: string) => {
     const timetable = timetables.find((tt) => tt.name === name);
     if (timetable) {
       setCurrentTimetableName(name);
@@ -101,19 +104,16 @@ const loadTimetable = (name: string) => {
       });
       setSelectedSectionsByType(sectionsByType);
 
-      setSavedCourseColors(colors);
-      setCourseColors(colors);
+      setEventColors(colors);
 
       toast.success(`Loaded timetable "${name}"`);
     }
   };
 
-
   const createNewTimetable = () => {
     setSelectedSections([]);
     setSelectedSectionsByType({});
-    setSavedCourseColors({});
-    setCourseColors({});
+    setEventColors({});
     setCurrentTimetableName(`Timetable ${timetables.length + 1}`);
     toast.success('Created new timetable');
   };
@@ -139,10 +139,8 @@ const loadTimetable = (name: string) => {
     setSelectedSections,
     selectedSectionsByType,
     setSelectedSectionsByType,
-    courseColors,
-    setCourseColors,
-    savedCourseColors,
-    setSavedCourseColors,
+    eventColors,
+    setEventColors,
     timetables,
     currentTimetableName,
     setCurrentTimetableName,
