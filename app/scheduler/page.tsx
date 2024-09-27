@@ -113,14 +113,14 @@ export default function ScheduleBuilderPage() {
   };
 
   const eventColorPalette = [
-    '#039BE5', // Blue
-    '#D81B60', // Pink
-    '#43A047', // Green
-    '#FB8C00', // Orange
-    '#8E24AA', // Purple
-    '#FDD835', // Yellow
-    '#6D4C41', // Brown
-    '#1E88E5', // Light Blue
+    '#59a8d0', // Blue
+    '#e951bd', // Pink
+    '#5ccf77', // Green
+    '#ec6716', // Orange
+    '#da88e5', // Purple
+    '#e67c73', // Terracota
+    '#cf875c', // Brown
+    '#474750', // Grey
   ];
 
   const eventStyleGetter = (event: any, start: any, end: any, isSelected: boolean) => {
@@ -137,7 +137,7 @@ export default function ScheduleBuilderPage() {
       style,
     };
   };
-
+  
   const handleCourseClick = (course: Course) => {
     const initialSelections: { [type: string]: Section } = {};
 
@@ -262,7 +262,11 @@ export default function ScheduleBuilderPage() {
   };
 
   useEffect(() => {
-    const events = generateCalendarEvents(selectedSections, eventColors);
+    const events = generateCalendarEvents(selectedSections, 
+      Object.fromEntries(selectedSections.map(section => 
+        [`${section.subject}-${section.course_number}`, eventColors[section.crn]]
+      ))
+    );    
     setCalendarEvents(events);
   }, [selectedSections, eventColors]);
 
@@ -445,10 +449,10 @@ export default function ScheduleBuilderPage() {
               isMobile
                 ? `transform transition-transform duration-300 ease-in-out ${
                     leftSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                  } absolute z-20 top-0 bottom-0 left-0 w-64 overflow-y-auto`
+                  } absolute z-20 ${isTopBarVisible ? 'top-16' : 'top-0'} bottom-0 left-0 w-64 overflow-y-auto`
                 : 'w-64 overflow-y-auto'
             }`}
-          >
+>
             <LeftSidebar
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
@@ -491,14 +495,14 @@ export default function ScheduleBuilderPage() {
           </div>
           {/* Right Sidebar */}
           <div
-            className={`flex-shrink-0 ${
-              isMobile
-                ? `transform transition-transform duration-300 ease-in-out ${
-                    rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-                  } absolute z-20 top-0 bottom-0 right-0 w-64 overflow-y-auto`
-                : 'w-64 overflow-y-auto'
-            }`}
-          >
+              className={`flex-shrink-0 ${
+                isMobile
+                  ? `transform transition-transform duration-300 ease-in-out ${
+                      rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+                    } absolute z-20 ${isTopBarVisible ? 'top-16' : 'top-0'} bottom-0 right-0 w-64 overflow-y-auto`
+                  : 'w-64 overflow-y-auto'
+              }`}
+            >
             <RightSidebar
               selectedCourse={selectedCourse}
               selectedTerm={selectedTerm}

@@ -176,7 +176,7 @@ export default function ExplorePage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-white-900 text-white">
+    <div className="flex flex-col h-screen bg-surface-100 text-white">
     <TopBar
         isMobile={isMobile}
         isMenuOpen={isMenuOpen}
@@ -195,11 +195,11 @@ export default function ExplorePage() {
                 placeholder="Search courses or subjects"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 bg-gray-800 border-gray-700 text-white"
+                className="pl-8 bg-surface-200 border-gray-700 text-white"
               />
             </div>
             <Select value={selectedTerm} onValueChange={(value) => setSelectedTerm(value)}>
-              <SelectTrigger className="w-full bg-gray-800 border-gray-700 text-white">
+              <SelectTrigger className="w-full bg-surface-200 border-gray-700 text-white">
                 <SelectValue placeholder="Select a term" />
               </SelectTrigger>
               <SelectContent>
