@@ -166,7 +166,7 @@ export default function ExplorePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-surface-100 text-white"> {/* Change bg-gray-900 to bg-surface-100 */}
+      <div className="flex items-center justify-center h-screen bg-surface-100 text-white">
         <div className="w-2/3">
           <p className="mb-4 text-center text-xl">Loading courses...</p>
           <Progress value={progressValue} className="w-full bg-surface-200" />
@@ -183,23 +183,23 @@ export default function ExplorePage() {
         setIsMenuOpen={setIsMenuOpen}
         isTopBarVisible={isTopBarVisible} // Pass the prop
       />
-      <div className="border-b border-gray-800 mt-16"></div>
+      <div className="border-b border-white-800 mt-16"></div>
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <div className="w-1/3 border-r border-gray-800 flex flex-col">
-          <div className="p-4 border-b border-gray-800">
+        <div className="w-1/3 border-r border-white-800 flex flex-col">
+          <div className="p-4 border-b border-white-800">
             <div className="relative mb-4">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-white-400" />
               <Input
                 type="search"
                 placeholder="Search courses or subjects"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 bg-surface-200 border-gray-700 text-white"
+                className="pl-8 bg-surface-200 border-white-700 text-white"
               />
             </div>
             <Select value={selectedTerm} onValueChange={(value) => setSelectedTerm(value)}>
-              <SelectTrigger className="w-full bg-surface-200 border-gray-700 text-white">
+              <SelectTrigger className="w-full bg-surface-200 border-white-700 text-white">
                 <SelectValue placeholder="Select a term" />
               </SelectTrigger>
               <SelectContent>
@@ -215,7 +215,7 @@ export default function ExplorePage() {
             <Accordion type="single" collapsible className="w-full">
               {filteredSubjects.map((subject) => (
                 <AccordionItem key={subject.id} value={subject.id}>
-                  <AccordionTrigger className="px-4 text-gray-300 hover:text-white">
+                  <AccordionTrigger className="px-4 text-white-300 hover:text-white">
                     {subject.name}
                   </AccordionTrigger>
                   <AccordionContent>
@@ -226,7 +226,7 @@ export default function ExplorePage() {
                         <Button
                           key={`${course.subject}-${course.course_number}`}
                           variant="ghost"
-                          className="w-full justify-start px-4 py-2 text-sm text-gray-300 hover:text-white"
+                          className="w-full justify-start px-4 py-2 text-sm text-white-300 hover:text-white"
                           onClick={() => handleCourseClick(course)}
                         >
                           {course.subject} {course.course_number}: {course.course_name}
@@ -273,7 +273,7 @@ export default function ExplorePage() {
                                 <p className="text-lg font-semibold">
                                   Section: {section.section}
                                 </p>
-                                <p className="text-sm text-gray-300">
+                                <p className="text-sm text-white-300">
                                   CRN: {section.crn} | Units: {section.units}
                                 </p>
                              </div>
@@ -305,7 +305,7 @@ export default function ExplorePage() {
                             </CardBody>
                             <Divider />
                             <CardFooter>
-                              <p className="text-sm text-gray-300">
+                              <p className="text-sm text-white-300">
                                 Term: {convertTermToString(section.term)}
                               </p>
                             </CardFooter>
@@ -318,7 +318,7 @@ export default function ExplorePage() {
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500 text-xl">Select a course to view details</p>
+                <p className="text-white-500 text-xl">Select a course to view details</p>
               </div>
             )}
           </div>
