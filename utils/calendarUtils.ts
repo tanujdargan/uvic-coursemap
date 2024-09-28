@@ -2,7 +2,10 @@
 import { parseTime, dayInitialsToNumbers, getDateOfWeekday } from '@/utils/dateUtils';
 import { Section } from '@/utils/interfaces';
 
-export function generateCalendarEvents(selectedSections: Section[], courseColors: { [key: string]: string }) {
+export function generateCalendarEvents(
+  selectedSections: Section[],
+  courseColors: { [crn: number]: string }
+) {
   const events = selectedSections
     .flatMap((section) => {
       if (!section.days || !section.time) {
@@ -19,8 +22,8 @@ export function generateCalendarEvents(selectedSections: Section[], courseColors
       const startTime = parseTime(timeRange[0]);
       const endTime = parseTime(timeRange[1]);
 
-      const courseKey = `${section.subject}-${section.course_number}`;
-      const eventColor = courseColors[courseKey] || '#3c4043';
+      //const courseKey = `${section.subject}-${section.course_number}`;
+      const eventColor = courseColors[section.crn] || '#3c4043';
 
       return daysArray
         .map((dayInitial) => {

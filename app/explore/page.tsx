@@ -166,10 +166,10 @@ export default function ExplorePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+      <div className="flex items-center justify-center h-screen bg-surface-100 text-white"> {/* Change bg-gray-900 to bg-surface-100 */}
         <div className="w-2/3">
           <p className="mb-4 text-center text-xl">Loading courses...</p>
-          <Progress value={progressValue} className="w-full bg-gray-800" />
+          <Progress value={progressValue} className="w-full bg-surface-200" />
         </div>
       </div>
     );

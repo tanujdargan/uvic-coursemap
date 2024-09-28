@@ -48,8 +48,6 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
     setTimetableNameInput(currentTimetableName);
   }, [currentTimetableName]);
 
-  console.log('Selected Course:', selectedCourse);
-
   return (
     <div className="bg-surface-100 h-full w-full p-4 overflow-y-auto">
       {selectedCourse ? (
@@ -205,7 +203,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
 
         {/* Export to ICS Button */}
         <button
-          className="mt-2 w-full bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded"
+          className="mt-2 w-full bg-surface-200 hover:bg-surface-300 text-white py-2 px-4 rounded"
           onClick={handleExportICS}
         >
           Export to .ics

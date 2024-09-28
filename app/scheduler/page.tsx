@@ -19,7 +19,7 @@ import { useTopBarVisibility } from '@/hooks/useTopBarVisibility';
 import { generateICS } from '@/utils/icsUtils';
 import { generateCalendarEvents } from '../../utils/calendarUtils';
 import { convertTermToString } from '@/utils/termUtils';
-import { hasTimeConflict } from '@/utils/sectionUtils';
+import { hasTimeConflict, hasInternalConflict } from '@/utils/sectionUtils';
 
 import { Course, Section } from '@/utils/interfaces';
 
@@ -51,7 +51,8 @@ export default function ScheduleBuilderPage() {
     createNewTimetable,
     deleteTimetable,
     eventColors,
-    setEventColors,
+    assignColorToSection,
+    releaseColorOfSection,
   } = useTimetable(groupedCourses);
 
   const isTopBarVisible = useTopBarVisibility();
@@ -112,17 +113,6 @@ export default function ScheduleBuilderPage() {
     }
   };
 
-  const eventColorPalette = [
-    '#59a8d0', // Blue
-    '#e951bd', // Pink
-    '#5ccf77', // Green
-    '#ec6716', // Orange
-    '#da88e5', // Purple
-    '#e67c73', // Terracota
-    '#cf875c', // Brown
-    '#474750', // Grey
-  ];
-
   const eventStyleGetter = (event: any, start: any, end: any, isSelected: boolean) => {
     const backgroundColor = event.color || '#3c4043';
     const style = {
@@ -137,7 +127,19 @@ export default function ScheduleBuilderPage() {
       style,
     };
   };
-  
+
+  // Function to check internal conflicts among new sections
+  const hasInternalConflict = (sections: Section[]): boolean => {
+    for (let i = 0; i < sections.length; i++) {
+      for (let j = i + 1; j < sections.length; j++) {
+        if (hasTimeConflict(sections[i], [sections[j]])) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   const handleCourseClick = (course: Course) => {
     const initialSelections: { [type: string]: Section } = {};
 
@@ -157,12 +159,14 @@ export default function ScheduleBuilderPage() {
       (s) => s.subject !== course.subject || s.course_number !== course.course_number
     );
 
-    const hasConflict = newSelectedSections.some((newSection) =>
+    const hasConflictWithExisting = newSelectedSections.some((newSection) =>
       hasTimeConflict(newSection, filteredPrev)
     );
 
-    if (hasConflict) {
-      toast.error('Time conflict detected with existing courses');
+    const hasConflictInternally = hasInternalConflict(newSelectedSections);
+
+    if (hasConflictWithExisting || hasConflictInternally) {
+      toast.error('Time conflict detected with existing courses or within selected sections');
       return;
     }
 
@@ -175,14 +179,7 @@ export default function ScheduleBuilderPage() {
 
     // Assign colors to each new section
     newSelectedSections.forEach((section) => {
-      setEventColors((prevColors) => {
-        if (!prevColors[section.crn]) {
-          const color =
-            eventColorPalette[Math.floor(Math.random() * eventColorPalette.length)];
-          return { ...prevColors, [section.crn]: color };
-        }
-        return prevColors;
-      });
+      assignColorToSection(section);
     });
 
     setSelectedCourse(course);
@@ -226,14 +223,7 @@ export default function ScheduleBuilderPage() {
       });
 
       // Assign a color to the event
-      setEventColors((prevColors) => {
-        if (!prevColors[selectedSection.crn]) {
-          const color =
-            eventColorPalette[Math.floor(Math.random() * eventColorPalette.length)];
-          return { ...prevColors, [selectedSection.crn]: color };
-        }
-        return prevColors;
-      });
+      assignColorToSection(selectedSection);
 
       toast.success(
         `${selectedSection.subject} ${selectedSection.course_number} - Section ${selectedSection.section} added`,
@@ -248,12 +238,8 @@ export default function ScheduleBuilderPage() {
 
               setSelectedSections((prev) => prev.filter((s) => s.crn !== crn));
 
-              // Remove color
-              setEventColors((prevColors) => {
-                const newColors = { ...prevColors };
-                delete newColors[crn];
-                return newColors;
-              });
+              // Release the color
+              releaseColorOfSection(crn);
             },
           },
         }
@@ -262,11 +248,7 @@ export default function ScheduleBuilderPage() {
   };
 
   useEffect(() => {
-    const events = generateCalendarEvents(selectedSections, 
-      Object.fromEntries(selectedSections.map(section => 
-        [`${section.subject}-${section.course_number}`, eventColors[section.crn]]
-      ))
-    );    
+    const events = generateCalendarEvents(selectedSections, eventColors);
     setCalendarEvents(events);
   }, [selectedSections, eventColors]);
 
@@ -303,12 +285,8 @@ export default function ScheduleBuilderPage() {
       return newSelectedSectionsByType;
     });
 
-    // Remove color
-    setEventColors((prevColors) => {
-      const newColors = { ...prevColors };
-      delete newColors[crn];
-      return newColors;
-    });
+    // Release the color
+    releaseColorOfSection(crn);
 
     toast.success('Event removed from timetable');
   };
@@ -366,6 +344,16 @@ export default function ScheduleBuilderPage() {
   );
 
   const handleDeleteCourse = (courseToDelete: Course) => {
+    // Release colors associated with the course's sections
+    selectedSections.forEach((section) => {
+      if (
+        section.subject === courseToDelete.subject &&
+        section.course_number === courseToDelete.course_number
+      ) {
+        releaseColorOfSection(section.crn);
+      }
+    });
+
     // Filter out sections related to the course
     const updatedSections = selectedSections.filter(
       (section) =>
@@ -386,18 +374,6 @@ export default function ScheduleBuilderPage() {
       }
     });
     setSelectedSectionsByType(updatedSectionsByType);
-
-    // Remove colors associated with the course's sections
-    const updatedEventColors = { ...eventColors };
-    selectedSections.forEach((section) => {
-      if (
-        section.subject === courseToDelete.subject &&
-        section.course_number === courseToDelete.course_number
-      ) {
-        delete updatedEventColors[section.crn];
-      }
-    });
-    setEventColors(updatedEventColors);
 
     // Optionally, update selectedCourse if the deleted course was the selected one
     if (
@@ -449,10 +425,12 @@ export default function ScheduleBuilderPage() {
               isMobile
                 ? `transform transition-transform duration-300 ease-in-out ${
                     leftSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                  } absolute z-20 ${isTopBarVisible ? 'top-16' : 'top-0'} bottom-0 left-0 w-64 overflow-y-auto`
+                  } absolute z-20 ${
+                    isTopBarVisible ? 'top-16' : 'top-0'
+                  } bottom-0 left-0 w-64 overflow-y-auto`
                 : 'w-64 overflow-y-auto'
             }`}
->
+          >
             <LeftSidebar
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
@@ -495,14 +473,16 @@ export default function ScheduleBuilderPage() {
           </div>
           {/* Right Sidebar */}
           <div
-              className={`flex-shrink-0 ${
-                isMobile
-                  ? `transform transition-transform duration-300 ease-in-out ${
-                      rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-                    } absolute z-20 ${isTopBarVisible ? 'top-16' : 'top-0'} bottom-0 right-0 w-64 overflow-y-auto`
-                  : 'w-64 overflow-y-auto'
-              }`}
-            >
+            className={`flex-shrink-0 ${
+              isMobile
+                ? `transform transition-transform duration-300 ease-in-out ${
+                    rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+                  } absolute z-20 ${
+                    isTopBarVisible ? 'top-16' : 'top-0'
+                  } bottom-0 right-0 w-64 overflow-y-auto`
+                : 'w-64 overflow-y-auto'
+            }`}
+          >
             <RightSidebar
               selectedCourse={selectedCourse}
               selectedTerm={selectedTerm}

@@ -1,11 +1,8 @@
-// utils/sectionUtils.ts
-
 import { Section, Course } from './interfaces'; // Adjust the import path based on your project structure
 import { parseTime, dayInitialsToNumbers } from './dateUtils';
 
 export function groupSectionsIntoCourses(sections: Section[]): Course[] {
   const coursesMap: { [key: string]: Course } = {};
-
   sections.forEach((section) => {
     const key = `${section.subject}-${section.course_number}`;
     if (!coursesMap[key]) {
@@ -75,4 +72,15 @@ export function getSectionTimes(section: Section) {
       };
     })
     .filter(Boolean) as { day: number; start: number; end: number }[];
+}
+
+export function hasInternalConflict(sections: Section[]): boolean {
+  for (let i = 0; i < sections.length; i++) {
+    for (let j = i + 1; j < sections.length; j++) {
+      if (hasTimeConflict(sections[i], [sections[j]])) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
