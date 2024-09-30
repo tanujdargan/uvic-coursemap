@@ -1,6 +1,7 @@
+// explore/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -70,14 +71,15 @@ export default function ExplorePage() {
   const [isTabActive, setIsTabActive] = useState(true);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
-  const [isTopBarVisible, setIsTopBarVisible] = useState(true);
+  const [isTopBarVisible, setIsTopBarVisible] = useState<boolean>(true);
+
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        document.title = "Stop Slacking!";
+        document.title = 'Stop Slacking!';
         setIsTabActive(false);
       } else {
-        document.title = "Explore Courses";
+        document.title = 'Explore Courses';
         setIsTabActive(true);
       }
     };
@@ -164,45 +166,62 @@ export default function ExplorePage() {
       subjectIdsWithMatchingCourses.has(subject.id)
   );
 
+  // Add useEffect to handle isMobile state
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    // Initial check
+    handleResize();
+
+    // Event listener
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-surface-100 text-white">
+      <div className="flex items-center justify-center h-screen bg-surface-100 text-black dark:bg-surface-800 dark:text-white">
         <div className="w-2/3">
-          <p className="mb-4 text-center text-xl">Loading courses...</p>
-          <Progress value={progressValue} className="w-full bg-surface-200" />
+          <p className="mb-2 text-center text-xl">Loading courses...</p>
+          <Progress value={progressValue} className="w-full bg-surface-200 dark:bg-surface-700" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-surface-100 text-white">
-    <TopBar
+    <div className="flex flex-col h-screen bg-surface-100 text-black dark:bg-surface-800 dark:text-white">
+      <TopBar
         isMobile={isMobile}
         isMenuOpen={isMenuOpen}
         setIsMenuOpen={setIsMenuOpen}
-        isTopBarVisible={isTopBarVisible} // Pass the prop
+        isTopBarVisible={isTopBarVisible}
       />
-      <div className="border-b border-white-800 mt-16"></div>
+      <div className="border-b border-surface-300 dark:border-surface-600 mt-16"></div>
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <div className="w-1/3 border-r border-white-800 flex flex-col">
-          <div className="p-4 border-b border-white-800">
+        <div className="w-1/3 border-r border-surface-300 dark:border-surface-600 flex flex-col">
+          <div className="p-4 border-b border-surface-300 dark:border-surface-600">
             <div className="relative mb-4">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-white-400" />
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-600 dark:text-gray-400" />
               <Input
                 type="search"
                 placeholder="Search courses or subjects"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 bg-surface-200 border-white-700 text-white"
+                className="pl-8 bg-surface-200 dark:bg-surface-700 border-surface-300 dark:border-surface-600 text-black dark:text-white"
               />
             </div>
             <Select value={selectedTerm} onValueChange={(value) => setSelectedTerm(value)}>
-              <SelectTrigger className="w-full bg-surface-200 border-white-700 text-white">
+              <SelectTrigger className="w-full bg-surface-300 dark:bg-surface-700 border-surface-300 dark:border-surface-600 text-black dark:text-white">
                 <SelectValue placeholder="Select a term" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-surface-300 dark:bg-surface-700">
                 {terms.map((term) => (
                   <SelectItem key={term} value={term.toString()}>
                     {convertTermToString(term)}
@@ -215,7 +234,7 @@ export default function ExplorePage() {
             <Accordion type="single" collapsible className="w-full">
               {filteredSubjects.map((subject) => (
                 <AccordionItem key={subject.id} value={subject.id}>
-                  <AccordionTrigger className="px-4 text-white-300 hover:text-white">
+                  <AccordionTrigger className="px-4 text-black dark:text-white">
                     {subject.name}
                   </AccordionTrigger>
                   <AccordionContent>
@@ -226,7 +245,7 @@ export default function ExplorePage() {
                         <Button
                           key={`${course.subject}-${course.course_number}`}
                           variant="ghost"
-                          className="w-full justify-start px-4 py-2 text-sm text-white-300 hover:text-white"
+                          className="w-full justify-start px-4 py-2 text-sm text-black dark:text-white"
                           onClick={() => handleCourseClick(course)}
                         >
                           {course.subject} {course.course_number}: {course.course_name}
@@ -265,18 +284,17 @@ export default function ExplorePage() {
                         {sectionsOfType.map((section, index) => (
                           <Card
                             key={index}
-                            className="mb-4 bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg text-white"
-                            style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                            className="mb-4 bg-surface-200 dark:bg-surface-700 text-black dark:text-white rounded-lg"
                           >
                             <CardHeader className="flex items-center">
                               <div className="flex flex-col">
                                 <p className="text-lg font-semibold">
                                   Section: {section.section}
                                 </p>
-                                <p className="text-sm text-white-300">
+                                <p className="text-sm text-muted-foreground">
                                   CRN: {section.crn} | Units: {section.units}
                                 </p>
-                             </div>
+                              </div>
                             </CardHeader>
                             <Divider />
                             <CardBody className="flex flex-wrap">
@@ -305,7 +323,7 @@ export default function ExplorePage() {
                             </CardBody>
                             <Divider />
                             <CardFooter>
-                              <p className="text-sm text-white-300">
+                              <p className="text-sm text-muted-foreground">
                                 Term: {convertTermToString(section.term)}
                               </p>
                             </CardFooter>
@@ -318,7 +336,7 @@ export default function ExplorePage() {
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">
-                <p className="text-white-500 text-xl">Select a course to view details</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xl">Select a course to view details</p>
               </div>
             )}
           </div>
@@ -369,6 +387,5 @@ function convertTermToString(termCode: number): string {
     default:
       semester = 'Unknown';
   }
-
   return `${semester} ${year}`;
 }

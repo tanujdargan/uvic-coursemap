@@ -1,111 +1,128 @@
-import {nextui} from '@nextui-org/theme';
-import type { Config } from "tailwindcss";
+// tailwind.config.ts
+
+import { nextui } from '@nextui-org/theme';
+import type { Config } from 'tailwindcss';
 
 const config: Config = {
-    darkMode: ["class"],
+  darkMode: 'class', // Enable dark mode via a CSS class ('dark')
+
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-	"./node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}"
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',       // Include all your pages
+    './components/**/*.{js,ts,jsx,tsx,mdx}',  // Include all your components
+    './app/**/*.{js,ts,jsx,tsx,mdx}',         // Include any app directory files
+    './node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}', // Include NextUI components
   ],
+
   theme: {
-  	extend: {
-  		colors: {
-			primary2: {
-				100: '#03a9f4',
-				200: '#4ab2f5',
-				300: '#6abcf7',
-				400: '#84c5f8',
-				500: '#9bcefa',
-				600: '#b1d8fb',
-			  },
-			  surface: {
-				100: '#121212',
-				200: '#282828',
-				300: '#3f3f3f',
-				400: '#575757',
-				500: '#717171',
-				600: '#8b8b8b',
-			  },
-			  'surface-mixed': {
-				100: '#1e2c38',
-				200: '#34404b',
-				300: '#4a5560',
-				400: '#626b75',
-				500: '#7a828a',
-				600: '#939aa0',
-			  },
-  			background: 'hsl(var(--background))',
-  			foreground: 'hsl(var(--foreground))',
-  			card: {
-  				DEFAULT: 'hsl(var(--card))',
-  				foreground: 'hsl(var(--card-foreground))'
-  			},
-  			popover: {
-  				DEFAULT: 'hsl(var(--popover))',
-  				foreground: 'hsl(var(--popover-foreground))'
-  			},
-  			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
-  			},
-  			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
-  			},
-  			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
-  			},
-  			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
-  			},
-  			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
-  			},
-  			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
-  			chart: {
-  				'1': 'hsl(var(--chart-1))',
-  				'2': 'hsl(var(--chart-2))',
-  				'3': 'hsl(var(--chart-3))',
-  				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
-  			}
-  		},
-  		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
-  		},
-  		keyframes: {
-  			'accordion-down': {
-  				from: {
-  					height: '0'
-  				},
-  				to: {
-  					height: 'var(--radix-accordion-content-height)'
-  				}
-  			},
-  			'accordion-up': {
-  				from: {
-  					height: 'var(--radix-accordion-content-height)'
-  				},
-  				to: {
-  					height: '0'
-  				}
-  			}
-  		},
-  		animation: {
-  			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
-  		}
-  	}
+    extend: {
+      colors: {
+        // Surface colors for light and dark themes
+        surface: {
+          // Light Theme Colors
+          100: '#ffffff', // Lightest surface color
+          200: '#f0f0f0', // Slightly darker surface
+          300: '#d0d0d0', // Even darker surface
+          // Dark Theme Colors (used with 'dark:' prefix)
+          700: '#2e2e2e',
+          800: '#121212',
+          900: '#000000',
+        },
+
+        // Text colors
+        'surface-text': {
+          DEFAULT: '#000000', // Text color for light theme
+          dark: '#e8eaed',    // Text color for dark theme
+        },
+
+        // Primary color palette
+        primary: {
+          100: '#03a9f4',
+          200: '#4ab2f5',
+          300: '#6abcf7',
+          400: '#84c5f8',
+          500: '#9bcefa',
+          600: '#b1d8fb',
+          DEFAULT: '#03a9f4', // Default primary color
+          foreground: '#ffffff', // Text color on primary backgrounds
+        },
+
+        // Secondary color palette
+        secondary: {
+          DEFAULT: '#f5a623',
+          foreground: '#ffffff',
+        },
+
+        // Muted colors
+        muted: {
+          DEFAULT: '#f5f5f5',
+          dark: '#1e1e1e',
+          foreground: '#888888',
+        },
+
+        // Accent colors
+        accent: {
+          DEFAULT: '#9fa39e',
+          foreground: '#ffffff',
+        },
+
+        // Destructive colors (for errors, warnings)
+        destructive: {
+          DEFAULT: '#e3342f',
+          foreground: '#ffffff',
+        },
+
+        // Miscellaneous colors
+        border: {
+          DEFAULT: '#d0d0d0',
+          dark: '#3f3f3f',
+        },
+        input: {
+          DEFAULT: '#ffffff',
+          dark: '#1e1e1e',
+        },
+        ring: {
+          DEFAULT: '#f5a623',
+          dark: '#f5a623',
+        },
+      },
+
+      // Define border radius values
+      borderRadius: {
+        none: '0',
+        sm: '0.125rem',      // 2px
+        DEFAULT: '0.25rem',  // 4px
+        md: '0.375rem',      // 6px
+        lg: '0.5rem',        // 8px
+        xl: '0.75rem',       // 12px
+        '2xl': '1rem',       // 16px
+        '3xl': '1.5rem',     // 24px
+        full: '9999px',
+      },
+
+      // Keyframes for animations
+      keyframes: {
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
+        },
+      },
+
+      // Define animations using the keyframes
+      animation: {
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
+      },
+    },
   },
-  plugins: [require('tailwindcss-animate'), nextui()],
+
+  plugins: [
+    require('tailwindcss-animate'), // For animation utilities
+    nextui(),                       // Include NextUI plugin
+  ],
 };
+
 export default config;

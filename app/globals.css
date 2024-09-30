@@ -1,42 +1,103 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Import Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+/* Define CSS Variables and apply to :root */
+:root {
+  /* Surface Colors (Light Theme) */
+  --surface-100: #ffffff;
+  --surface-200: #f0f0f0;
+  --surface-300: #d0d0d0;
+  --surface-700: #e0e0e0; /* Light grey */
+  --surface-800: #f5f5f5; /* Very light grey */
+
+  /* Text Colors */
+  --surface-text: #000000;
+
+  /* Other Variables */
+  --color-primary-100: #03a9f4;
+  --color-primary-200: #4ab2f5;
+  --radius: 0.5rem;
+}
+
+/* Override Variables in Dark Theme */
+.dark {
+  --surface-100: #121212;
+  --surface-200: #1e1e1e;
+  --surface-300: #2a2a2a;
+  --surface-700: #2e2e2e;
+  --surface-800: #121212;
+  --surface-text: #e8eaed;
+}
+
+/* Base Styles */
 @layer base {
   /* Set default font family */
   html {
     font-family: 'Inter', sans-serif;
   }
 
-  /* Apply dark theme */
   body {
-    @apply bg-surface-100 text-white;
     overflow-x: hidden;
-  }
-
-  /* Custom CSS variables */
-  :root {
-    /* Your custom colors */
-    --color-primary-100: #03a9f4;
-    --color-primary-200: #4ab2f5;
-
-    --radius: 0.5rem;
+    background-color: var(--surface-100);
+    color: var(--surface-text);
   }
 }
 
-/* In globals.css or a CSS module */
+/* Custom Utility Classes for Backgrounds */
+.bg-surface-100 {
+  background-color: var(--surface-100);
+}
+
+.bg-surface-200 {
+  background-color: var(--surface-200);
+}
+
+.bg-surface-300 {
+  background-color: var(--surface-300);
+}
+
+.bg-surface-700 {
+  background-color: var(--surface-700);
+}
+
+.bg-surface-800 {
+  background-color: var(--surface-800);
+}
+
+/* Custom Utility Classes for Text Color */
+.text-surface-text {
+  color: var(--surface-text);
+}
+
+/* Custom Utility Classes for Borders */
+.border-surface-300 {
+  border-color: var(--surface-300);
+}
+
+.border-surface-600 {
+  border-color: var(--surface-700);
+}
+
+/* Custom Event Hover Effect */
 .custom-event {
   transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
 .custom-event:hover {
   transform: scale(1.02);
-  background-color: var(--color-primary-200);
+  background-color: var(--surface-300);
 }
 
+.bg-white {
+  background-color: var(--surface-text);
+}
 
+/* Video Background Styling */
 .video-bg video {
   position: fixed;
   top: 0;
@@ -45,4 +106,19 @@
   height: 100%;
   object-fit: cover;
   z-index: 0;
+}
+
+/* Remove hover background color but retain focus styles */
+
+.no-hover-highlight:hover {
+  background-color: transparent;
+}
+
+.no-hover-highlight:focus {
+  /* Optionally customize focus styles */
+  outline: 2px solid #FFD700; /* Gold color outline for focus */
+}
+
+.no-hover-highlight:focus:not(:focus-visible) {
+  outline: none; /* Remove outline when not focus-visible */
 }

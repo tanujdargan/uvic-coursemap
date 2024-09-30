@@ -3,62 +3,30 @@
 'use client';
 
 import React from 'react';
+import { HeaderProps } from 'react-big-calendar';
 
-// ** Props Interface **
-interface CustomHeaderProps {
-  date: Date;
-  label: string;
-}
-
-const CustomHeader: React.FC<CustomHeaderProps> = ({ date }) => {
-  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const dayIndex = date.getDay();
-  const dayName = daysOfWeek[dayIndex];
-  const dayNumber = date.getDate();
+const CustomHeader: React.FC<HeaderProps> = ({ date, localizer }) => {
+  const dayName = localizer.format(date, 'eee'); // e.g., 'Mon'
+  const dayNumber = localizer.format(date, 'd'); // e.g., '4'
 
   const isToday = isSameDay(date, new Date());
 
   return (
-    <div
-      className="rbc-header"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '4px 0',
-      }}
-    >
-      <span
-        style={{
-          fontSize: '14px',
-          color: isToday ? '#4285F4' : '#e8eaed',
-        }}
-      >
-        {dayName}
-      </span>
-      <span
-        style={{
-          fontSize: '16px',
-          fontWeight: 'bold',
-          backgroundColor: isToday ? '#4285F4' : 'transparent',
-          color: 'white',
-          width: '28px',
-          height: '28px',
-          lineHeight: '28px',
-          borderRadius: '50%',
-          textAlign: 'center',
-          marginTop: '4px',
-        }}
-      >
-        {dayNumber}
-      </span>
-    </div>
+    <button type="button" className="rbc-button-link custom-header-button">
+      <div className="rbc-header custom-header-content">
+        <span className={`custom-header-day-name ${isToday ? 'today' : ''}`}>
+          {dayName}
+        </span>
+        <span className={`custom-header-day-number ${isToday ? 'today' : ''}`}>
+          {dayNumber}
+        </span>
+      </div>
+    </button>
   );
 };
 
 export default CustomHeader;
 
-// ** Helper function to check if two dates are the same day **
 function isSameDay(d1: Date, d2: Date): boolean {
   return (
     d1.getFullYear() === d2.getFullYear() &&

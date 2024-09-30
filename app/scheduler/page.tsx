@@ -113,6 +113,18 @@ export default function ScheduleBuilderPage() {
     }
   };
 
+  // Function to check internal conflicts among new sections
+  const hasInternalConflict = (sections: Section[]): boolean => {
+    for (let i = 0; i < sections.length; i++) {
+      for (let j = i + 1; j < sections.length; j++) {
+        if (hasTimeConflict(sections[i], [sections[j]])) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   const eventStyleGetter = (event: any, start: any, end: any, isSelected: boolean) => {
     const backgroundColor = event.color || '#3c4043';
     const style = {
@@ -126,18 +138,6 @@ export default function ScheduleBuilderPage() {
     return {
       style,
     };
-  };
-
-  // Function to check internal conflicts among new sections
-  const hasInternalConflict = (sections: Section[]): boolean => {
-    for (let i = 0; i < sections.length; i++) {
-      for (let j = i + 1; j < sections.length; j++) {
-        if (hasTimeConflict(sections[i], [sections[j]])) {
-          return true;
-        }
-      }
-    }
-    return false;
   };
 
   const handleCourseClick = (course: Course) => {
@@ -390,10 +390,10 @@ export default function ScheduleBuilderPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-surface-100 text-white">
+      <div className="flex items-center justify-center h-screen bg-surface-100 text-black dark:bg-surface-800 dark:text-white">
         <div className="w-2/3">
           <p className="mb-4 text-center text-xl">Loading courses...</p>
-          <Progress value={progressValue} className="w-full bg-surface-200" />
+          <Progress value={progressValue} className="w-full bg-surface-200 dark:bg-surface-700" />
         </div>
       </div>
     );
@@ -403,7 +403,7 @@ export default function ScheduleBuilderPage() {
     <>
       <Toaster position="top-center" richColors />
       <div
-        className="flex flex-col h-screen overflow-hidden bg-surface-100 text-white"
+        className="flex flex-col h-screen overflow-hidden bg-surface-100 text-black dark:bg-surface-800 dark:text-white"
         style={{ overflowX: 'hidden' }}
       >
         <TopBar
@@ -421,7 +421,7 @@ export default function ScheduleBuilderPage() {
         >
           {/* Left Sidebar */}
           <div
-            className={`flex-shrink-0 ${
+            className={`flex-shrink-0 bg-surface-200 dark:bg-surface-700 text-black dark:text-white ${
               isMobile
                 ? `transform transition-transform duration-300 ease-in-out ${
                     leftSidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -455,9 +455,9 @@ export default function ScheduleBuilderPage() {
               }}
             >
               {leftSidebarOpen ? (
-                <ChevronLeft className="text-white" />
+                <ChevronLeft className="text-black dark:text-white" />
               ) : (
-                <ChevronRight className="text-white" />
+                <ChevronRight className="text-black dark:text-white" />
               )}
             </div>
           )}
@@ -473,7 +473,7 @@ export default function ScheduleBuilderPage() {
           </div>
           {/* Right Sidebar */}
           <div
-            className={`flex-shrink-0 ${
+            className={`flex-shrink-0 bg-surface-200 dark:bg-surface-700 text-black dark:text-white ${
               isMobile
                 ? `transform transition-transform duration-300 ease-in-out ${
                     rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'
@@ -511,9 +511,9 @@ export default function ScheduleBuilderPage() {
               }}
             >
               {rightSidebarOpen ? (
-                <ChevronRight className="text-white" />
+                <ChevronRight className="text-black dark:text-white" />
               ) : (
-                <ChevronLeft className="text-white" />
+                <ChevronLeft className="text-black dark:text-white" />
               )}
             </div>
           )}

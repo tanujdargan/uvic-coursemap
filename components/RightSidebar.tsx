@@ -49,7 +49,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   }, [currentTimetableName]);
 
   return (
-    <div className="bg-surface-100 h-full w-full p-4 overflow-y-auto">
+    <div className="bg-surface-100 h-full w-full p-4 overflow-y-auto border-l border-surface-300">
       {selectedCourse ? (
         <>
           <h2 className="text-xl font-bold mb-2">
@@ -140,7 +140,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
               onChange={(e) => setCurrentTimetableName(e.target.value)}
               className="timetable-name-input"
               style={{
-                backgroundColor: 'gray',
+                backgroundColor: 'var(--surface-300)', // Use CSS variable for background color
                 border: 'none',
                 color: 'inherit',
                 font: 'inherit',
@@ -164,7 +164,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
         <div className="mt-2">
           <label className="block text-sm font-medium mb-1">Saved Timetables:</label>
           <select
-            className="w-full bg-surface-300 border-surface-400 text-white placeholder-surface-500 rounded-md p-2"
+            className="w-full bg-surface-300 border-surface-400 text--surface-text placeholder-surface-500 rounded-md p-2"
             value={currentTimetableName}
             onChange={(e) => loadTimetable(e.target.value)}
           >
@@ -203,7 +203,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
 
         {/* Export to ICS Button */}
         <button
-          className="mt-2 w-full bg-surface-200 hover:bg-surface-300 text-white py-2 px-4 rounded"
+          className="mt-2 w-full bg-surface-300 hover:bg-surface-300  py-2 px-4 rounded"
           onClick={handleExportICS}
         >
           Export to .ics

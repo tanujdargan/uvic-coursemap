@@ -1,88 +1,84 @@
+/* Calendar.css */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
 /* Calendar Container */
 .rbc-calendar {
-  background-color: #121212;
-  color: #e8eaed;
+  background-color: var(--surface-100);
+  color: var(--surface-text);
   font-family: 'Roboto', sans-serif;
   border: none;
 }
 
 /* Calendar Navigation Buttons (if you enable toolbar) */
 .rbc-toolbar {
-  background-color: #121212;
-  color: #e8eaed;
+  background-color: var(--surface-100);
+  color: var(--surface-text);
   padding: 10px;
-  border-bottom: 1px solid #5f6368;
+  border-bottom: 1px solid var(--surface-300);
 }
 
 .rbc-toolbar button {
   background: none;
   border: none;
-  color: #e8eaed;
+  color: var(--surface-text);
   padding: 5px 10px;
   margin: 0 5px;
   cursor: pointer;
 }
 
 .rbc-toolbar button:hover {
-  background-color: #5f6368;
+  background-color: var(--surface-200);
   border-radius: 4px;
 }
 
 /* Calendar Header (Day Labels) */
 .rbc-time-header {
-  background-color: #121212;
+  background-color: var(--surface-100);
   border-bottom: none;
+  color: var(--surface-text) !important;
 }
 
 .rbc-time-header-cell {
-  color: #e8eaed;
-  border-left: 1px solid #5f6368;
-}
-
-
-.rbc-day-slot .rbc-time-slot {
-  border-top: 1px solid #5f6368;
+  color: var(--surface-text);
+  border-left: 1px solid var(--surface-300);
 }
 
 /* Time Gutter (Time Labels on the Left) */
 .rbc-time-gutter {
-  background-color: #121212;
-  color: #e8eaed;
-  border-right: 1px solid #5f6368;
+  background-color: var(--surface-100);
+  color: var(--surface-text);
+  border-right: 1px solid var(--surface-300);
 }
 
 .rbc-timeslot-group {
-  border-bottom: 1px solid #5f6368;
+  border-bottom: 1px solid var(--surface-300);
 }
 
 /* Time Slots */
 .rbc-time-content {
   border-top: none;
-  background-color: #121212;
+  background-color: var(--surface-100);
 }
 
 .rbc-day-slot .rbc-time-slot {
-  border-top: none;
-  background-color: #121212;
+  border-top: 1px solid var(--surface-300);
 }
 
 .rbc-time-slot {
-  background-color: #121212;
+  background-color: var(--surface-100);
 }
 
 /* Events */
 .rbc-event {
-  background-color: #121212;
-  color: #e8eaed;
+  background-color: var(--color-primary-100);
+  color: var(--surface-text) !important;
   border-radius: 2px;
   padding: 2px 4px;
   border: none;
 }
 
 .rbc-event:hover {
-  background-color: #121212;
+  background-color: var(--color-surface-200);
 }
 
 /* Now Indicator (Current Time Line) */
@@ -92,7 +88,11 @@
 
 /* Today's Highlight */
 .rbc-day-bg.rbc-today {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.1); /* Adjusted for better visibility in light theme */
+}
+
+.dark .rbc-day-bg.rbc-today {
+  background-color: rgba(255, 255, 255, 0.1); /* Adjusted for dark theme */
 }
 
 /* Event Overlap Styling */
@@ -104,7 +104,7 @@
 /* Scrollbar Styling */
 .rbc-time-content {
   scrollbar-width: thin;
-  scrollbar-color: #5f6368 #202124;
+  scrollbar-color: var(--surface-300) var(--surface-100);
 }
 
 .rbc-time-content::-webkit-scrollbar {
@@ -112,13 +112,13 @@
 }
 
 .rbc-time-content::-webkit-scrollbar-track {
-  background: #121212;
+  background: var(--surface-100);
 }
 
 .rbc-time-content::-webkit-scrollbar-thumb {
-  background-color: #121212;
+  background-color: var(--surface-300);
   border-radius: 4px;
-  border: 2px solid #121212;
+  border: 2px solid var(--surface-100);
 }
 
 /* Adjustments for the Week View */
@@ -136,7 +136,7 @@
 }
 
 .rbc-time-header-cell {
-  padding-bottom: 2px 0;
+  padding-bottom: 0;
   padding-top: 0px;
   text-align: center;
   font-weight: bold;
@@ -149,16 +149,20 @@
 
 /* Event Titles */
 .rbc-event-content {
-  color: #e8eaed;
+  color: var(--surface-text);
   font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.dark .rbc-event-content {
+  color: var(--surface-text); /* Adjusted for dark theme */
+}
+
 /* Hide the AM/PM indicators on time labels */
 .rbc-label {
-  color: #e8eaed;
+  color: var(--surface-text);
 }
 
 .rbc-timeslot-group .rbc-timeslot {
@@ -168,54 +172,6 @@
 /* Custom Event Styling */
 .rbc-event {
   box-shadow: none;
-}
-
-/* Hide borders between time slots */
-.rbc-timeslot-group {
-  border-bottom: none;
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .rbc-time-header-cell {
-    font-size: 12px;
-  }
-
-  .rbc-event-content {
-    font-size: 10px;
-  }
-}
-
-.fc .fc-event {
-  color: #fff;
-  cursor: pointer;
-}
-
-/* Tooltip styling */
-.custom-tooltip {
-  position: absolute;
-  z-index: 1000;
-}
-
-.rbc-time-content,
-.rbc-day-slot .rbc-time-slot,
-.rbc-time-slot {
-  background-color: #121212 !important;
-}
-
-/* Remove left border of the first column */
-.rbc-time-column:first-child {
-  border-left: none;
-}
-
-/* Remove right border of the last column */
-.rbc-time-column:last-child {
-  border-right: none;
-}
-
-/* Remove bottom border of the last time slot */
-.rbc-time-slot:last-child {
-  border-bottom: none;
 }
 
 .rbc-calendar,
@@ -230,5 +186,78 @@
 }
 
 .rbc-time-gutter {
-  border-right: 1px solid #5f6368 !important;
+  border-right: 1px solid var(--surface-300) !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .rbc-time-header-cell {
+    font-size: 12px;
+  }
+
+  .rbc-event-content {
+    font-size: 10px;
+  }
+}
+
+.fc .fc-event {
+  color: #d13131;
+  cursor: pointer;
+}
+
+/* Tooltip styling */
+.custom-tooltip {
+  position: absolute;
+  z-index: 1000;
+}
+
+.rbc-time-content,
+.rbc-day-slot .rbc-time-slot,
+.rbc-time-slot {
+  background-color: var(--surface-100) !important;
+}
+
+/* Custom Header Styles */
+.custom-header-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  width: 100%;
+}
+
+.custom-header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.custom-header-day-name {
+  font-size: 14px;
+  color: var(--surface-text); /* Use CSS variable for text color */
+}
+
+.custom-header-day-number {
+  font-size: 16px;
+  font-weight: bold;
+  background-color: transparent;
+  color: var(--surface-text); /* Use CSS variable for text color */
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  border-radius: 50%;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* Highlight today */
+.custom-header-day-name.today,
+.custom-header-day-number.today {
+  color: var(--color-primary-100);
+}
+
+.custom-header-day-number.today {
+  background-color: var(--color-primary-100);
+  color: #ffffff;
 }

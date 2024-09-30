@@ -1,11 +1,14 @@
-"use client";
+// page.tsx
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import TopBar from '../components/TopBar';
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { motion } from "framer-motion";
+import TopBar from '@/components/TopBar';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
+import { motion } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
+import { useTheme } from 'next-themes';
 
 export default function Home() {
   const [videoSource, setVideoSource] = useState('');
@@ -46,35 +49,56 @@ export default function Home() {
     }
   }, [videoSource]);
 
+  // Add this useEffect to handle isMobile state
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    // Initial check
+    handleResize();
+
+    // Event listener
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-black">
-      <motion.div initial="hidden" animate="visible" variants={{
-        hidden: { opacity: 0 },
-        visible: { opacity: 1, transition: { delay: 0.1 } }
-      }}>
-      <div className="video-bg">
-        {videoSource && (
-          <video 
-            ref={videoRef}
-            autoPlay 
-            loop 
-            muted 
-            playsInline
-            className="object-cover w-full h-full"
-          >
-            <source src={videoSource} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        )}
-      </div>
-      <TopBar
-        isMobile={isMobile}
-        isMenuOpen={isMenuOpen}
-        setIsMenuOpen={setIsMenuOpen}
-        isTopBarVisible={isTopBarVisible}
-      />
+    <div className="min-h-screen flex flex-col relative overflow-hidden bg-surface-100 text-black dark:bg-surface-800 dark:text-white">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: { opacity: 1, transition: { delay: 0.1 } },
+        }}
+      >
+        <div className="video-bg">
+          {videoSource && (
+            <video
+              ref={videoRef}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="object-cover w-full h-full"
+            >
+              <source src={videoSource} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          )}
+        </div>
+        <TopBar
+          isMobile={isMobile}
+          isMenuOpen={isMenuOpen}
+          setIsMenuOpen={setIsMenuOpen}
+          isTopBarVisible={isTopBarVisible}
+        />
       </motion.div>
-      <div 
+      <div
         className="flex-grow flex items-center justify-center"
         style={{
           paddingTop: isTopBarVisible ? '64px' : '0px',
@@ -82,36 +106,61 @@ export default function Home() {
         }}
       >
         <div className="z-10 text-center mt-32">
-          <motion.div initial="hidden" animate="visible" variants={{
-            hidden: { opacity: 0, y: -50 },
-            visible: { opacity: 1, y: 0 }
-          }}>
-            <h1 className="text-2xl font-bold text-white mb-8">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0, y: -50 },
+              visible: { opacity: 1, y: 0 },
+            }}
+          >
+            <h1 className="text-2xl font-bold mb-8 text-white">
               Explore courses and create timetables for your semester at UVIC
             </h1>
           </motion.div>
           <div className="flex justify-center space-x-4">
-            <motion.div initial="hidden" animate="visible" variants={{
-              hidden: { opacity: 0 },
-              visible: { opacity: 1, transition: { delay: 0.25 } }
-            }}>
-              <Button asChild variant="secondary" className="bg-black bg-opacity-75 rounded-lg">
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1, transition: { delay: 0.25 } },
+              }}
+            >
+              <Button
+                asChild
+                variant="secondary"
+                className="bg-surface-100 text-black dark:bg-surface-800 dark:text-white rounded-lg hover:bg-surface-300 dark:hover:bg-surface-700"
+              >
                 <Link href="/explore">Explore Courses</Link>
               </Button>
             </motion.div>
-            <motion.div initial="hidden" animate="visible" variants={{
-              hidden: { opacity: 0 },
-              visible: { opacity: 1, transition: { delay: 0.30 } }
-            }}>
-              <Button asChild variant="secondary" className="bg-black bg-opacity-75 rounded-lg">
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 }, 
+                visible: { opacity: 1, transition: { delay: 0.3 } },
+              }}
+            >
+              <Button
+                asChild
+                variant="secondary"
+                className="bg-surface-100 text-black dark:bg-surface-800 dark:text-white rounded-lg hover:bg-surface-300 dark:hover:bg-surface-700"
+              >
                 <Link href="/scheduler">Create Timetable</Link>
               </Button>
             </motion.div>
           </div>
-          <motion.p initial="hidden" animate="visible" variants={{
-            hidden: { opacity: 0 },
-            visible: { opacity: 1, transition: { delay: 0.35 } }
-          }} className="mt-8 text-white">
+          <motion.p
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: { opacity: 1, transition: { delay: 0.35 } },
+            }}
+            className="mt-8 text-white"
+          >
             Built by{' '}
             <a
               href="https://github.com/TanujDargan"
