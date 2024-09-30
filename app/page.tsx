@@ -115,7 +115,7 @@ export default function Home() {
             }}
           >
             <h1 className="text-2xl font-bold mb-8 text-white">
-              Explore courses and create timetables for your semester at UVIC
+              Explore Courses and Create Timetables for your semester at UVIC
             </h1>
           </motion.div>
           <div className="flex justify-center space-x-4">
