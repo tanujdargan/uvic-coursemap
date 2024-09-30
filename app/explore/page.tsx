@@ -28,6 +28,7 @@ import {
   CardFooter,
   Divider,
 } from '@nextui-org/react';
+import { IProfessorRating } from '@/utils/rateMyProfessor'; // Import the IProfessorRating interface
 
 interface Section {
   term: number;
@@ -72,6 +73,9 @@ export default function ExplorePage() {
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isTopBarVisible, setIsTopBarVisible] = useState<boolean>(true);
+
+  // State to cache professor ratings
+  const [ratingsCache, setRatingsCache] = useState<{ [professorName: string]: IProfessorRating }>({});
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -182,6 +186,70 @@ export default function ExplorePage() {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  // Fetch professor ratings when selectedCourse changes
+  useEffect(() => {
+    const fetchRatingsForSelectedCourse = async () => {
+      if (!selectedCourse) return;
+
+      const instructorNames = new Set<string>();
+      selectedCourse.sections.forEach((section) => {
+        const instructorName = section.instructor.trim();
+        if (instructorName && instructorName !== '') {
+          instructorNames.add(instructorName);
+        }
+      });
+
+      const fetchPromises = Array.from(instructorNames)
+        .filter((instructorName) => !ratingsCache[instructorName])
+        .map(async (instructorName) => {
+          try {
+            const response = await fetch(`/api/ratings/${encodeURIComponent(instructorName)}`);
+            if (response.ok) {
+              const data: IProfessorRating = await response.json();
+              setRatingsCache((prevCache) => ({
+                ...prevCache,
+                [instructorName]: data,
+              }));
+            } else {
+              console.error(`Failed to fetch rating for ${instructorName}: ${response.statusText}`);
+              // Optionally store a default value
+              setRatingsCache((prevCache) => ({
+                ...prevCache,
+                [instructorName]: {
+                  avgRating: -1,
+                  avgDifficulty: -1,
+                  wouldTakeAgainPercent: -1,
+                  numRatings: 0,
+                  formattedName: instructorName,
+                  department: '',
+                  link: '',
+                },
+              }));
+            }
+          } catch (error) {
+            console.error(`Error fetching rating for ${instructorName}:`, error);
+            // Optionally store a default value
+            setRatingsCache((prevCache) => ({
+              ...prevCache,
+              [instructorName]: {
+                avgRating: -1,
+                avgDifficulty: -1,
+                wouldTakeAgainPercent: -1,
+                numRatings: 0,
+                formattedName: instructorName,
+                department: '',
+                link: '',
+              },
+            }));
+          }
+        });
+
+      await Promise.all(fetchPromises);
+    };
+
+    fetchRatingsForSelectedCourse();
+  }, [selectedCourse]);
 
   if (loading) {
     return (
@@ -298,10 +366,62 @@ export default function ExplorePage() {
                             </CardHeader>
                             <Divider />
                             <CardBody className="flex flex-wrap">
-                              <div className="w-1/2">
+                              <div>
                                 <p>
                                   <strong>Instructor:</strong> {section.instructor}
                                 </p>
+                                {section.instructor && section.instructor.trim() !== '' && (
+                                  <>
+                                    <p>
+                                      <strong>Rate My Prof Rating:</strong>{' '}
+                                      {ratingsCache[section.instructor] ? (
+                                        ratingsCache[section.instructor].avgRating !== -1 ? (
+                                          <>
+                                            {ratingsCache[section.instructor].avgRating} / 5.0
+                                            {' ('}
+                                            {ratingsCache[section.instructor].numRatings} ratings{') '}
+                                            <a
+                                              href={ratingsCache[section.instructor].link}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-blue-500 underline"
+                                            >
+                                              View Profile
+                                            </a>
+                                          </>
+                                        ) : (
+                                          'N/A'
+                                        )
+                                      ) : (
+                                        'Loading...'
+                                      )}
+                                    </p>
+                                    <p>
+                                      <strong>Level of Difficulty:</strong>{' '}
+                                      {ratingsCache[section.instructor] ? (
+                                        ratingsCache[section.instructor].avgDifficulty !== -1 ? (
+                                          `${ratingsCache[section.instructor].avgDifficulty} / 5.0`
+                                        ) : (
+                                          'N/A'
+                                        )
+                                      ) : (
+                                        'Loading...'
+                                      )}
+                                    </p>
+                                    <p>
+                                      <strong>Would Take Again:</strong>{' '}
+                                      {ratingsCache[section.instructor] ? (
+                                        ratingsCache[section.instructor].wouldTakeAgainPercent !== -1 ? (
+                                          `${ratingsCache[section.instructor].wouldTakeAgainPercent.toFixed(2)}%`
+                                        ) : (
+                                          'N/A'
+                                        )
+                                      ) : (
+                                        'Loading...'
+                                      )}
+                                    </p>
+                                  </>
+                                )}
                                 <p>
                                   <strong>Method:</strong> {section.instructional_method}
                                 </p>

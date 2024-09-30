@@ -10,6 +10,7 @@ Check out the live version of the project [here](https://uvic-coursemap.vercel.a
 ## Inspiration Credits
 
 - [CourseUp by VikeLabs](https://courseup.vikelabs.ca/) — A scheduling tool for UVic students to help plan courses.
+- [RMP API Wrapper by snow4060](https://github.com/snow4060/rmp-api) - Wrapper for Rate My Prof API that was used.
 
 ## API Reference
 
