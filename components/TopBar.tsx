@@ -37,25 +37,13 @@ const TopBar: React.FC<TopBarProps> = ({
         transition: 'transform 0.3s ease-in-out',
       }}
     >
+      {/* Left Side - Logo */}
       <Link href="/" className="text-xl font-bold ml-4">
         CourseMap
       </Link>
 
-      {/* Mobile Menu Button */}
-      <div className="md:hidden mr-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            setIsMenuOpen(!isMenuOpen);
-          }}
-        >
-          {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
-      </div>
-
-      {/* Navigation Links and Theme Toggle */}
-      <div className="hidden md:flex items-center pr-4">
+      {/* Right Side - Theme Toggle and Navigation/Menu */}
+      <div className="flex items-center mr-4">
         {/* Theme Toggle */}
         {mounted && (
           <div className="flex items-center mr-2">
@@ -75,22 +63,37 @@ const TopBar: React.FC<TopBarProps> = ({
           </div>
         )}
 
-        {/* Navigation Links */}
-        <Button asChild variant="ghost" className="text-lg font-bold">
-          <Link href="/explore">Explore Courses</Link>
-        </Button>
-        <Button asChild variant="ghost" className="text-lg font-bold">
-          <Link href="/scheduler">Timetable</Link>
-        </Button>
-        <Button asChild variant="ghost" size="icon">
-          <a
-            href="https://github.com/TanujDargan/uvic-coursemap"
-            target="_blank"
-            rel="noopener noreferrer"
+        {/* Desktop Navigation Links */}
+        <div className="hidden md:flex items-center">
+          <Button asChild variant="ghost" className="text-lg font-bold">
+            <Link href="/explore">Explore Courses</Link>
+          </Button>
+          <Button asChild variant="ghost" className="text-lg font-bold">
+            <Link href="/scheduler">Timetable</Link>
+          </Button>
+          <Button asChild variant="ghost" size="icon">
+            <a
+              href="https://github.com/TanujDargan/uvic-coursemap"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Github className="h-5 w-5 mr-2" />
+            </a>
+          </Button>
+        </div>
+
+        {/* Mobile Menu Button */}
+        <div className="md:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setIsMenuOpen(!isMenuOpen);
+            }}
           >
-            <Github className="h-5 w-5 mr-2" />
-          </a>
-        </Button>
+            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
