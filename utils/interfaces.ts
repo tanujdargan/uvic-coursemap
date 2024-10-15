@@ -1,4 +1,5 @@
-// Interfaces
+// utils/interfaces.ts
+
 export interface Section {
   term: number;
   subject: string;
@@ -28,4 +29,16 @@ export interface Course {
 export interface Subject {
   id: string;
   name: string;
+}
+
+export interface CourseDetails {
+  pid: string;
+  courseId: string;
+  subjectCode: string;
+  title: string;
+  description: string;
+  credits: number;
+  prerequisites?: string;
+  recommendations?: string;
+  notes?: string;
 }

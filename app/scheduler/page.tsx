@@ -64,10 +64,28 @@ export default function ScheduleBuilderPage() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
+  const [isTabActive, setIsTabActive] = useState(true);
   // State variables for resizable sidebars
   const [leftSidebarWidth, setLeftSidebarWidth] = useState<number>(256); // Default width is 256px (16rem)
   const [rightSidebarWidth, setRightSidebarWidth] = useState<number>(256);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        document.title = 'Stop Slacking!';
+        setIsTabActive(false);
+      } else {
+        document.title = 'Timetable';
+        setIsTabActive(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     handleResize();

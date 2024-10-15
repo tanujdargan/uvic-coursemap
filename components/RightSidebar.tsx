@@ -3,7 +3,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Section, Course } from '../utils/interfaces';
+import { Section, Course, CourseDetails } from '../utils/interfaces';
 import { IProfessorRating } from '@/utils/rateMyProfessor'; // Adjust the path as necessary
 
 interface RightSidebarProps {
@@ -40,6 +40,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   const [showDetails, setShowDetails] = useState(false);
   const [timetableNameInput, setTimetableNameInput] = useState(currentTimetableName);
   const [professorRating, setProfessorRating] = useState<IProfessorRating | null>(null);
+  const [courseDetails, setCourseDetails] = useState<CourseDetails | null>(null);
 
   useEffect(() => {
     setTimetableNameInput(currentTimetableName);
@@ -92,6 +93,32 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
     }
   }, [selectedCourse]);
 
+  // Fetch course details when the selected course changes
+  useEffect(() => {
+    const fetchCourseDetails = async (courseId: string) => {
+      try {
+        const response = await fetch(`/api/course-details/${encodeURIComponent(courseId)}`);
+        if (response.ok) {
+          const data: CourseDetails = await response.json();
+          setCourseDetails(data);
+        } else {
+          console.error(`Failed to fetch course details for ${courseId}: ${response.statusText}`);
+          setCourseDetails(null);
+        }
+      } catch (error) {
+        console.error('Error fetching course details:', error);
+        setCourseDetails(null);
+      }
+    };
+
+    if (selectedCourse) {
+      const courseId = `${selectedCourse.subject}${selectedCourse.course_number}`;
+      fetchCourseDetails(courseId);
+    } else {
+      setCourseDetails(null);
+    }
+  }, [selectedCourse]);
+
   return (
     <div className="bg-surface-100 h-full w-full p-4 overflow-y-auto border-l border-surface-300">
       {selectedCourse ? (
@@ -112,7 +139,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
           {/* Details Section */}
           <div
             className={`overflow-hidden transition-all duration-300 ${
-              showDetails ? 'max-h-96' : 'max-h-0'
+              showDetails ? 'max-h-full' : 'max-h-0'
             }`}
           >
             {/* Course Details */}
@@ -178,6 +205,34 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
                   </p>
                 )}
               </div>
+            )}
+
+            {/* Additional Course Details */}
+            {courseDetails ? (
+              <div className="mb-4">
+                {courseDetails.description && (
+                  <p className="mb-2">
+                    <strong>Description:</strong> {courseDetails.description}
+                  </p>
+                )}
+                {courseDetails.prerequisites && (
+                  <p className="mb-2">
+                    <strong>Prerequisites:</strong> {courseDetails.prerequisites}
+                  </p>
+                )}
+                {courseDetails.recommendations && (
+                  <p className="mb-2">
+                    <strong>Recommendations:</strong> {courseDetails.recommendations}
+                  </p>
+                )}
+                {courseDetails.notes && (
+                  <p>
+                    <strong>Notes:</strong> {courseDetails.notes}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p>No additional details available.</p>
             )}
           </div>
 
@@ -306,5 +361,4 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
     </div>
   );
 };
-
 export default RightSidebar;

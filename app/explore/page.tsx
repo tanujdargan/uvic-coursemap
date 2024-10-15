@@ -60,6 +60,19 @@ interface Subject {
   name: string;
 }
 
+interface CourseDetails {
+  pid: string;
+  courseId: string;
+  subjectCode: string;
+  title: string;
+  description: string;
+  credits: number;
+  prerequisites?: string;
+  recommendations?: string;
+  notes?: string;
+}
+
+
 export default function ExplorePage() {
   const [groupedCourses, setGroupedCourses] = useState<Course[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -73,6 +86,7 @@ export default function ExplorePage() {
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isTopBarVisible, setIsTopBarVisible] = useState<boolean>(true);
+  const [courseDetails, setCourseDetails] = useState<CourseDetails | null>(null);
 
   // State to cache professor ratings
   const [ratingsCache, setRatingsCache] = useState<{ [professorName: string]: IProfessorRating }>({});
@@ -98,6 +112,30 @@ export default function ExplorePage() {
   useEffect(() => {
     fetchCourses();
   }, []);
+  useEffect(() => {
+    const fetchCourseDetails = async (courseId: string) => {
+      try {
+        const response = await fetch(`/api/course-details/${encodeURIComponent(courseId)}`);
+        if (response.ok) {
+          const data: CourseDetails = await response.json();
+          setCourseDetails(data);
+        } else {
+          console.error(`Failed to fetch course details for ${courseId}: ${response.statusText}`);
+          setCourseDetails(null);
+        }
+      } catch (error) {
+        console.error('Error fetching course details:', error);
+        setCourseDetails(null);
+      }
+    };
+  
+    if (selectedCourse) {
+      const courseId = `${selectedCourse.subject}${selectedCourse.course_number}`;
+      fetchCourseDetails(courseId);
+    } else {
+      setCourseDetails(null);
+    }
+  }, [selectedCourse]);  
 
   const fetchCourses = async () => {
     try {
@@ -333,6 +371,32 @@ export default function ExplorePage() {
                 <h2 className="text-2xl font-bold mb-4">
                   {selectedCourse.subject} {selectedCourse.course_number}: {selectedCourse.course_name}
                 </h2>
+                {courseDetails ? (
+                  <div className="mb-4">
+                {courseDetails.description && (
+                  <p className="mb-2">
+                    <strong>Description:</strong> {courseDetails.description}
+                  </p>
+                )}
+                {courseDetails.prerequisites && (
+                  <p className="mb-2">
+                    <strong>Prerequisites:</strong> {courseDetails.prerequisites}
+                  </p>
+                )}
+                {courseDetails.recommendations && (
+                  <p className="mb-2">
+                    <strong>Recommendations:</strong> {courseDetails.recommendations}
+                  </p>
+                )}
+                {courseDetails.notes && (
+                  <p>
+                    <strong>Notes:</strong> {courseDetails.notes}
+                  </p>
+                )}
+                  </div>
+                ) : (
+                  <p>No additional details available.</p>
+                )}
                 {/* Display sections using Cards */}
                 {['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'].map((type) => {
                   const sectionsOfType = selectedCourse.sections
