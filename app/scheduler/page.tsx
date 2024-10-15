@@ -65,6 +65,10 @@ export default function ScheduleBuilderPage() {
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // State variables for resizable sidebars
+  const [leftSidebarWidth, setLeftSidebarWidth] = useState<number>(256); // Default width is 256px (16rem)
+  const [rightSidebarWidth, setRightSidebarWidth] = useState<number>(256);
+
   useEffect(() => {
     handleResize();
     window.addEventListener('resize', handleResize);
@@ -82,6 +86,9 @@ export default function ScheduleBuilderPage() {
     if (!isMobileView) {
       setLeftSidebarOpen(true);
       setRightSidebarOpen(true);
+    } else {
+      setLeftSidebarOpen(false);
+      setRightSidebarOpen(false);
     }
   };
 
@@ -388,6 +395,53 @@ export default function ScheduleBuilderPage() {
     );
   };
 
+  // Handlers for resizing sidebars
+  const handleLeftResizeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault(); // Prevent text selection
+    const startX = e.clientX;
+    const startWidth = leftSidebarWidth;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startX;
+      let newWidth = startWidth + deltaX;
+      // Set boundaries
+      if (newWidth < 100) newWidth = 100; // Minimum width of 100px
+      if (newWidth > 400) newWidth = 400; // Maximum width of 400px
+      setLeftSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleRightResizeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault(); // Prevent text selection
+    const startX = e.clientX;
+    const startWidth = rightSidebarWidth;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = startX - e.clientX;
+      let newWidth = startWidth + deltaX;
+      // Set boundaries
+      if (newWidth < 100) newWidth = 100; // Minimum width of 100px
+      if (newWidth > 400) newWidth = 400; // Maximum width of 400px
+      setRightSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-surface-100 text-black dark:bg-surface-800 dark:text-white">
@@ -428,8 +482,13 @@ export default function ScheduleBuilderPage() {
                   } absolute z-20 ${
                     isTopBarVisible ? 'top-16' : 'top-0'
                   } bottom-0 left-0 w-64 overflow-y-auto`
-                : 'w-64 overflow-y-auto'
+                : 'overflow-y-auto'
             }`}
+            style={
+              !isMobile
+                ? { width: leftSidebarWidth }
+                : undefined
+            }
           >
             <LeftSidebar
               searchTerm={searchTerm}
@@ -443,24 +502,20 @@ export default function ScheduleBuilderPage() {
               convertTermToString={convertTermToString}
             />
           </div>
-          {/* Left Swipe Arrow */}
-          {isMobile && (
+
+          {/* Left Resize Handle */}
+          {!isMobile && (
             <div
-              className={`absolute top-1/2 transform -translate-y-1/2 z-20 p-2 cursor-pointer transition-transform duration-300 ${
-                leftSidebarOpen ? 'left-64' : 'left-0'
-              }`}
-              onClick={() => {
-                setLeftSidebarOpen(!leftSidebarOpen);
-                setRightSidebarOpen(false);
+              className="resize-handle-left"
+              onMouseDown={handleLeftResizeMouseDown}
+              style={{
+                width: '5px',
+                cursor: 'col-resize',
+                backgroundColor: 'transparent',
               }}
-            >
-              {leftSidebarOpen ? (
-                <ChevronLeft className="text-black dark:text-white" />
-              ) : (
-                <ChevronRight className="text-black dark:text-white" />
-              )}
-            </div>
+            />
           )}
+
           {/* Center - Calendar */}
           <div className="flex-grow overflow-hidden" id="calendar-container">
             <CalendarComponent
@@ -471,6 +526,20 @@ export default function ScheduleBuilderPage() {
               onSelectEvent={handleEventSelect}
             />
           </div>
+
+          {/* Right Resize Handle */}
+          {!isMobile && (
+            <div
+              className="resize-handle-right"
+              onMouseDown={handleRightResizeMouseDown}
+              style={{
+                width: '5px',
+                cursor: 'col-resize',
+                backgroundColor: 'transparent',
+              }}
+            />
+          )}
+
           {/* Right Sidebar */}
           <div
             className={`flex-shrink-0 bg-surface-200 dark:bg-surface-700 text-black dark:text-white ${
@@ -480,8 +549,13 @@ export default function ScheduleBuilderPage() {
                   } absolute z-20 ${
                     isTopBarVisible ? 'top-16' : 'top-0'
                   } bottom-0 right-0 w-64 overflow-y-auto`
-                : 'w-64 overflow-y-auto'
+                : 'overflow-y-auto'
             }`}
+            style={
+              !isMobile
+                ? { width: rightSidebarWidth }
+                : undefined
+            }
           >
             <RightSidebar
               selectedCourse={selectedCourse}
@@ -499,23 +573,44 @@ export default function ScheduleBuilderPage() {
               handleDeleteCourse={handleDeleteCourse}
             />
           </div>
-          {/* Right Swipe Arrow */}
+
+          {/* Mobile Swipe Arrows */}
           {isMobile && (
-            <div
-              className={`absolute top-1/2 transform -translate-y-1/2 z-20 p-2 cursor-pointer transition-transform duration-300 ${
-                rightSidebarOpen ? 'right-64' : 'right-0'
-              }`}
-              onClick={() => {
-                setRightSidebarOpen(!rightSidebarOpen);
-                setLeftSidebarOpen(false);
-              }}
-            >
-              {rightSidebarOpen ? (
-                <ChevronRight className="text-black dark:text-white" />
-              ) : (
-                <ChevronLeft className="text-black dark:text-white" />
-              )}
-            </div>
+            <>
+              {/* Left Swipe Arrow */}
+              <div
+                className={`absolute top-1/2 transform -translate-y-1/2 z-20 p-2 cursor-pointer transition-transform duration-300 ${
+                  leftSidebarOpen ? 'left-64' : 'left-0'
+                }`}
+                onClick={() => {
+                  setLeftSidebarOpen(!leftSidebarOpen);
+                  setRightSidebarOpen(false);
+                }}
+              >
+                {leftSidebarOpen ? (
+                  <ChevronLeft className="text-black dark:text-white" />
+                ) : (
+                  <ChevronRight className="text-black dark:text-white" />
+                )}
+              </div>
+
+              {/* Right Swipe Arrow */}
+              <div
+                className={`absolute top-1/2 transform -translate-y-1/2 z-20 p-2 cursor-pointer transition-transform duration-300 ${
+                  rightSidebarOpen ? 'right-64' : 'right-0'
+                }`}
+                onClick={() => {
+                  setRightSidebarOpen(!rightSidebarOpen);
+                  setLeftSidebarOpen(false);
+                }}
+              >
+                {rightSidebarOpen ? (
+                  <ChevronRight className="text-black dark:text-white" />
+                ) : (
+                  <ChevronLeft className="text-black dark:text-white" />
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
