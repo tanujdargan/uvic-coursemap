@@ -28,7 +28,8 @@ import {
   CardFooter,
   Divider,
 } from '@nextui-org/react';
-import { IProfessorRating } from '@/utils/rateMyProfessor'; // Import the IProfessorRating interface
+import { IProfessorRating } from '@/utils/rateMyProfessor';
+import { motion } from 'framer-motion';
 
 interface Section {
   term: number;
@@ -90,6 +91,9 @@ export default function ExplorePage() {
 
   // State to cache professor ratings
   const [ratingsCache, setRatingsCache] = useState<{ [professorName: string]: IProfessorRating }>({});
+
+  // State to store seat capacity data
+  const [seatCapacities, setSeatCapacities] = useState<{ [crn: number]: any }>({});
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -289,6 +293,30 @@ export default function ExplorePage() {
     fetchRatingsForSelectedCourse();
   }, [selectedCourse]);
 
+  // Function to fetch seat capacity for a given term and CRN
+  const fetchSeatCapacity = async (term: number, crn: number) => {
+    try {
+      const response = await fetch(`/api/seat-capacity?term=${term}&crn=${crn}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSeatCapacities((prev) => ({ ...prev, [crn]: data.data }));
+      } else {
+        console.error(`Failed to fetch seat capacity for CRN ${crn}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error(`Error fetching seat capacity for CRN ${crn}:`, error);
+    }
+  };
+
+  // Fetch seat capacity data when selectedCourse changes
+  useEffect(() => {
+    if (selectedCourse) {
+      selectedCourse.sections.forEach((section) => {
+        fetchSeatCapacity(section.term, section.crn);
+      });
+    }
+  }, [selectedCourse]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-surface-100 text-black dark:bg-surface-800 dark:text-white">
@@ -372,7 +400,7 @@ export default function ExplorePage() {
                   {selectedCourse.subject} {selectedCourse.course_number}: {selectedCourse.course_name}
                 </h2>
                 {courseDetails ? (
-                  <div className="mb-4">
+<div className="mb-4">
                 {courseDetails.description && (
                   <p className="mb-2">
                     <strong>Description:</strong> {courseDetails.description}
@@ -414,9 +442,22 @@ export default function ExplorePage() {
                       <h3 className="text-xl font-semibold mb-2">{type}s</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {sectionsOfType.map((section, index) => (
+                          <motion.div
+                          key={index}
+                          className="mb-4 rounded-lg"
+                          initial={{ borderWidth: 0, borderColor: 'transparent', boxShadow: 'none' }}
+                          whileHover={{
+                            scale: 1.02,
+                            borderWidth: 2,
+                            borderColor: 'var(--card-hover)',
+                            boxShadow: '0 0 10px var(--card-hover)',
+                          }}
+                          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                          style={{ borderStyle: 'solid', borderRadius: '0.5rem' }}
+                        >
                           <Card
                             key={index}
-                            className="mb-4 bg-surface-200 dark:bg-surface-700 text-black dark:text-white rounded-lg"
+                            className="bg-surface-200 dark:bg-surface-700 text-black dark:text-white rounded-lg"
                           >
                             <CardHeader className="flex items-center">
                               <div className="flex flex-col">
@@ -426,11 +467,16 @@ export default function ExplorePage() {
                                 <p className="text-sm text-muted-foreground">
                                   CRN: {section.crn} | Units: {section.units}
                                 </p>
+                                {seatCapacities[section.crn] && (
+                                  <p className="text-sm text-muted-foreground">
+                                    Seats: {seatCapacities[section.crn].Seats.Actual} / {seatCapacities[section.crn].Seats.Capacity} ({seatCapacities[section.crn].Seats.Remaining} remaining)
+                                  </p>
+                                )}
                               </div>
                             </CardHeader>
                             <Divider />
                             <CardBody className="flex flex-wrap">
-                              <div>
+                              <div className="w-full md:w-1/8">
                                 <p>
                                   <strong>Instructor:</strong> {section.instructor}
                                 </p>
@@ -493,7 +539,7 @@ export default function ExplorePage() {
                                   <strong>Time:</strong> {section.time}
                                 </p>
                               </div>
-                              <div className="w-1/2">
+                              <div className="w-full md:w-1/10">
                                 <p>
                                   <strong>Days:</strong> {section.days}
                                 </p>
@@ -512,6 +558,7 @@ export default function ExplorePage() {
                               </p>
                             </CardFooter>
                           </Card>
+                          </motion.div>
                         ))}
                       </div>
                     </div>

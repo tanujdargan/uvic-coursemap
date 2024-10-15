@@ -68,6 +68,9 @@ export default function ScheduleBuilderPage() {
   // State variables for resizable sidebars
   const [leftSidebarWidth, setLeftSidebarWidth] = useState<number>(256); // Default width is 256px (16rem)
   const [rightSidebarWidth, setRightSidebarWidth] = useState<number>(256);
+  const [seatData, setSeatData] = useState<any>(null); // Add state for seat data
+  const [isFetchingSeatData, setIsFetchingSeatData] = useState<boolean>(false); // Add state for fetching status
+  const [seatDataError, setSeatDataError] = useState<string | null>(null); // Add state for error handling
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -165,7 +168,7 @@ export default function ScheduleBuilderPage() {
     };
   };
 
-  const handleCourseClick = (course: Course) => {
+  const handleCourseClick = async (course: Course) => {
     const initialSelections: { [type: string]: Section } = {};
 
     ['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'].forEach((type) => {
@@ -213,9 +216,15 @@ export default function ScheduleBuilderPage() {
       setLeftSidebarOpen(false);
       setRightSidebarOpen(false);
     }
+
+    // Fetch seat data
+    if (newSelectedSections.length > 0) {
+      const firstSection = newSelectedSections[0];
+      await fetchSeatData(firstSection.term.toString(), firstSection.crn.toString()); // Fetch seat data
+    }
   };
 
-  const handleSectionSelection = (type: string, crnValue: string) => {
+  const handleSectionSelection = async (type: string, crnValue: string) => {
     const crn = parseInt(crnValue);
     const selectedSection = selectedCourse?.sections.find((section) => section.crn === crn);
 
@@ -269,6 +278,9 @@ export default function ScheduleBuilderPage() {
           },
         }
       );
+
+      // Fetch seat data for the selected section
+      await fetchSeatData(selectedSection.term.toString(), selectedSection.crn.toString()); // Fetch seat data
     }
   };
 
@@ -460,6 +472,27 @@ export default function ScheduleBuilderPage() {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  // Add fetchSeatData function
+  const fetchSeatData = async (term: string, crn: string) => {
+    setIsFetchingSeatData(true);
+    setSeatData(null);
+    setSeatDataError(null);
+
+    try {
+      const response = await fetch(`/api/seat-capacity?term=${term}&crn=${crn}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch seat data');
+      }
+      const data = await response.json();
+      setSeatData(data);
+    } catch (error: any) {
+      console.error('Error fetching seat data:', error);
+      setSeatDataError(error.message);
+    } finally {
+      setIsFetchingSeatData(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-surface-100 text-black dark:bg-surface-800 dark:text-white">
@@ -589,6 +622,9 @@ export default function ScheduleBuilderPage() {
               loadTimetable={loadTimetable}
               createNewTimetable={createNewTimetable}
               handleDeleteCourse={handleDeleteCourse}
+              seatData={seatData}
+              isFetchingSeatData={isFetchingSeatData}
+              seatDataError={seatDataError}
             />
           </div>
 

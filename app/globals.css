@@ -14,6 +14,7 @@
   --surface-300: #d0d0d0;
   --surface-700: #e0e0e0; /* Light grey */
   --surface-800: #f5f5f5; /* Very light grey */
+  --card-hover: #c7c7c7;
 
   /* Text Colors */
   --surface-text: #000000;
@@ -32,6 +33,7 @@
   --surface-700: #2e2e2e;
   --surface-800: #121212;
   --surface-text: #e8eaed;
+  --card-hover: #777777;
 }
 
 /* Base Styles */

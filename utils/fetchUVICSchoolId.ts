@@ -8,7 +8,7 @@ async function fetchUVICSchoolId() {
 
     if (schools && schools.length > 0) {
       const uvic = schools[0];
-      console.log('UVIC School ID:', uvic.node.id);
+      //console.log('UVIC School ID:', uvic.node.id);
     } else {
       console.log('UVIC not found.');
     }

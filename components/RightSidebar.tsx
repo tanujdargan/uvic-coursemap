@@ -20,6 +20,9 @@ interface RightSidebarProps {
   loadTimetable: (name: string) => void;
   createNewTimetable: () => void;
   handleDeleteCourse: (courseToDelete: Course) => void;
+  seatData: any;
+  isFetchingSeatData: boolean;
+  seatDataError: string | null;
 }
 
 const RightSidebar: React.FC<RightSidebarProps> = ({
@@ -36,6 +39,9 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   loadTimetable,
   createNewTimetable,
   handleDeleteCourse,
+  seatData,
+  isFetchingSeatData,
+  seatDataError,
 }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [timetableNameInput, setTimetableNameInput] = useState(currentTimetableName);
@@ -271,89 +277,103 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
             );
           })}
 
-          {/* Timetable Actions */}
-          <div className="mt-4">
-            {/* Timetable Name Input */}
-            <div className="timetable-name-container" style={{ paddingBottom: '10px' }}>
-              <label htmlFor="timetable-name">Timetable Name:</label>
-              <div style={{ paddingBottom: '4px' }}></div>
-              <input
-                id="timetable-name"
-                type="text"
-                value={timetableNameInput}
-                onChange={(e) => setTimetableNameInput(e.target.value)}
-                className="timetable-name-input"
-                style={{
-                  backgroundColor: 'var(--surface-300)',
-                  border: 'none',
-                  color: 'inherit',
-                  font: 'inherit',
-                  margin: '0',
-                  padding: '2px',
-                  width: '100%',
-                  borderRadius: '4px',
-                }}
-              />
-            </div>
+          {/* Seat Information in the specified format */}
+          <div className="mt-4 mb-6"> {/* Added margin-bottom for spacing */}
+            <h3 className="text-md font-semibold mb-2">Seat Availability</h3>
+            {isFetchingSeatData && <p>Loading seat information...</p>}
+            {seatDataError && <p className="text-red-500">{seatDataError}</p>}
+            {seatData && (
+              <div>
+                <p>
+                  <strong>Seats:</strong> {seatData.data.Seats.Actual} / {seatData.data.Seats.Capacity} ({seatData.data.Seats.Remaining} remaining)
+                </p>
+                <p>
+                  <strong>Waitlist:</strong> {seatData.data.Waitlist.Actual} / {seatData.data.Waitlist.Capacity} ({seatData.data.Waitlist.Remaining} remaining)
+                </p>
+              </div>
+            )}
+          </div>
 
-            {/* Save Timetable Button */}
-            <button
-              className="w-full bg-green-600 hover:bg-green-500 text-white py-2 px-4 rounded"
-              onClick={() => handleSaveTimetable(timetableNameInput)}
+          {/* Timetable Name Input moved below Seat Information */}
+          <div className="timetable-name-container" style={{ paddingBottom: '10px' }}>
+            <label htmlFor="timetable-name">Timetable Name:</label>
+            <div style={{ paddingBottom: '4px' }}></div>
+            <input
+              id="timetable-name"
+              type="text"
+              value={timetableNameInput}
+              onChange={(e) => setTimetableNameInput(e.target.value)}
+              className="timetable-name-input"
+              style={{
+                backgroundColor: 'var(--surface-300)',
+                border: 'none',
+                color: 'inherit',
+                font: 'inherit',
+                margin: '0',
+                padding: '2px',
+                width: '100%',
+                borderRadius: '4px',
+              }}
+            />
+          </div>
+
+          {/* Save Timetable Button */}
+          <button
+            className="w-full bg-green-600 hover:bg-green-500 text-white py-2 px-4 rounded"
+            onClick={() => handleSaveTimetable(timetableNameInput)}
+          >
+            Save Timetable
+          </button>
+
+          {/* Timetables Dropdown */}
+          <div className="mt-2">
+            <label className="block text-sm font-medium mb-1">Saved Timetables:</label>
+            <select
+              className="w-full bg-surface-300 border-surface-400 text--surface-text placeholder-surface-500 rounded-md p-2"
+              value={currentTimetableName}
+              onChange={(e) => loadTimetable(e.target.value)}
             >
-              Save Timetable
-            </button>
+              {timetables.map((tt) => (
+                <option key={tt.name} value={tt.name}>
+                  {tt.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-            {/* Timetables Dropdown */}
-            <div className="mt-2">
-              <label className="block text-sm font-medium mb-1">Saved Timetables:</label>
-              <select
-                className="w-full bg-surface-300 border-surface-400 text--surface-text placeholder-surface-500 rounded-md p-2"
-                value={currentTimetableName}
-                onChange={(e) => loadTimetable(e.target.value)}
-              >
-                {timetables.map((tt) => (
-                  <option key={tt.name} value={tt.name}>
-                    {tt.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* New Timetable Button */}
+          <button
+            className="mt-2 w-full bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded"
+            onClick={createNewTimetable}
+          >
+            New Timetable
+          </button>
 
-            {/* New Timetable Button */}
-            <button
-              className="mt-2 w-full bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded"
-              onClick={createNewTimetable}
-            >
-              New Timetable
-            </button>
+          {/* Delete Timetable Button */}
+          <button
+            className="mt-2 w-full bg-red-600 hover:bg-red-500 text-white py-2 px-4 rounded"
+            onClick={handleDeleteTimetable}
+          >
+            Delete Timetable
+          </button>
 
-            {/* Delete Timetable Button */}
+          {/* Delete Course Button */}
+          {selectedCourse && (
             <button
               className="mt-2 w-full bg-red-600 hover:bg-red-500 text-white py-2 px-4 rounded"
-              onClick={handleDeleteTimetable}
+              onClick={() => handleDeleteCourse(selectedCourse)}
             >
-              Delete Timetable
+              Delete Course
             </button>
+          )}
 
-            {/* Delete Course Button */}
-            {selectedCourse && (
-              <button
-                className="mt-2 w-full bg-red-600 hover:bg-red-500 text-white py-2 px-4 rounded"
-                onClick={() => handleDeleteCourse(selectedCourse)}
-              >
-                Delete Course
-              </button>
-            )}
-
-            {/* Export to ICS Button */}
-            <button
-              className="mt-2 w-full bg-surface-300 hover:bg-surface-300 py-2 px-4 rounded"
-              onClick={handleExportICS}
-            >
-              Export to .ics
-            </button>
-          </div>
+          {/* Export to ICS Button */}
+          <button
+            className="mt-2 w-full bg-surface-300 hover:bg-surface-300 py-2 px-4 rounded"
+            onClick={handleExportICS}
+          >
+            Export to .ics
+          </button>
         </>
       ) : (
         <p className="text-center">Select a course to view sections</p>

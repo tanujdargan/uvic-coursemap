@@ -83,8 +83,8 @@ export async function searchProfessorsAtSchoolId(
       });
   
       const responseBody = await response.text(); // Get the raw response text
-      console.log('Response Status:', response.status);
-      console.log('Response Body:', responseBody);
+      //console.log('Response Status:', response.status);
+      //console.log('Response Body:', responseBody);
   
       if (!response.ok) {
         throw new Error("Network response from RMP not OK");
