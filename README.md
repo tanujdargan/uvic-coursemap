@@ -19,7 +19,14 @@ Since accessing UVic's API is not a feasible approach, a data scraper was built 
 The data scraper for this project is maintained under a separate repository:  
 [Scraper Repository](https://github.com/tanujdargan/scraper-uvic-data)
 
-However, CourseMap uses MongoDB on the backend to store all its scraped data. API routes for this can be found under `app/api/courses/routes.ts`
+However, CourseMap uses MongoDB on the backend to store all its scraped data. API routes for this can be found under `app/api/courses/routes.ts`.
+
+For additional course information the route is `app/api/seat-capacity`
+
+#### Seat Capacity Data
+Since saving this data to our collection on MongoDB is not feasible, we can generate requests according to courses and then parse html from BAN1P. CourseMap is doing this under the hood using cheerio.
+
+`https://www.uvic.ca/BAN1P/bwckschd.p_disp_detail_sched?term_in=<termvalue>&crn_in=<crn>`
 
 ## Appendix
 
