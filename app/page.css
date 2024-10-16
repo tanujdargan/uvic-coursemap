@@ -1,0 +1,118 @@
+/* page.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Define CSS variables */
+@property --color-a {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+@property --color-b {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+@property --color-c {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+@property --mouse-x {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --mouse-y {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+/* Updated Keyframes for Blob Animations */
+@keyframes blob {
+  0% {
+    transform: translate(0vw, 0vh) scale(1);
+  }
+  25% {
+    transform: translate(30vw, -20vh) scale(1.2);
+  }
+  50% {
+    transform: translate(-25vw, 30vh) scale(1.4);
+  }
+  75% {
+    transform: translate(40vw, 20vh) scale(0.9);
+  }
+  100% {
+    transform: translate(0vw, 0vh) scale(1);
+  }
+}
+
+@keyframes blob-reverse {
+  0% {
+    transform: translate(0vw, 0vh) scale(1);
+  }
+  25% {
+    transform: translate(-35vw, 25vh) scale(1.3);
+  }
+  50% {
+    transform: translate(20vw, -30vh) scale(0.8);
+  }
+  75% {
+    transform: translate(-15vw, 35vh) scale(1.1);
+  }
+  100% {
+    transform: translate(0vw, 0vh) scale(1);
+  }
+}
+
+/* Blob container */
+.blob {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  --blob-color-from: var(--color-a);
+  --blob-color-to: var(--color-b);
+}
+
+.blob::before,
+.blob::after {
+  content: '';
+  position: absolute;
+  background: linear-gradient(
+    45deg,
+    var(--blob-color-from),
+    var(--blob-color-to)
+  );
+  filter: blur(50px) brightness(1);
+  border-radius: 25%;
+}
+
+.blob::before {
+  left: 20%;
+  top: 10%;
+  width: 70%;
+  height: 50%;
+  transform-origin: 60%;
+  animation: blob 20s infinite;
+  animation-timing-function: linear;
+}
+
+.blob::after {
+  left: 40%;
+  top: 30%;
+  width: 70%;
+  height: 80%;
+  transform-origin: 60%;
+  animation: blob-reverse 25s infinite;
+  animation-timing-function: linear;
+}
+
+/* Smooth Gradient Transition */
+.transition-colors {
+  transition:
+    --color-a 5s ease-in-out,
+    --color-b 5s ease-in-out,
+    --color-c 5s ease-in-out;
+}

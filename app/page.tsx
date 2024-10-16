@@ -8,48 +8,44 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { motion } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
-import { useTheme } from 'next-themes';
+import './page.css'; // Import the CSS file for custom styles
 
 export default function Home() {
-  const [videoSource, setVideoSource] = useState('');
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isTopBarVisible, setIsTopBarVisible] = useState(true);
 
+  // Reference to the wrapper div for setting CSS variables
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const [gradientIndex, setGradientIndex] = useState<number>(0);
+
+  // Updated list of 2 gradients using CSS variables
+  const gradients = [
+    ['var(--gradient-1-1)', 'var(--gradient-1-2)', 'var(--gradient-1-3)'], // Gradient 1
+    ['var(--gradient-2-1)', 'var(--gradient-2-2)', 'var(--gradient-2-3)'], // Gradient 2
+  ];
+
+  // Update gradient index every 15 seconds
   useEffect(() => {
-    const determineVideoSource = () => {
-      if (window.innerWidth <= 768) {
-        setVideoSource('./CourseMap-phone.mp4');
-      } else {
-        setVideoSource('./CourseMap.mp4');
-      }
-    };
+    const intervalId = setInterval(() => {
+      setGradientIndex((prevIndex) => (prevIndex + 1) % gradients.length);
+    }, 15000); // Update every 15 seconds
 
-    // Initial determination
-    determineVideoSource();
+    return () => clearInterval(intervalId);
+  }, [gradients.length]);
 
-    // Create ResizeObserver
-    const resizeObserver = new ResizeObserver(() => {
-      determineVideoSource();
-    });
-
-    // Observe the document body
-    resizeObserver.observe(document.body);
-
-    // Cleanup
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, []);
-
+  // Update CSS variables when gradient index changes
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.load();
-    }
-  }, [videoSource]);
+    if (!wrapperRef.current) return;
 
-  // Add this useEffect to handle isMobile state
+    const [a, b, c] = gradients[gradientIndex];
+
+    wrapperRef.current.style.setProperty('--color-a', a);
+    wrapperRef.current.style.setProperty('--color-b', b);
+    wrapperRef.current.style.setProperty('--color-c', c);
+  }, [gradientIndex, gradients]);
+
+  // Handle mobile state
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -66,8 +62,42 @@ export default function Home() {
     };
   }, []);
 
+  // Mouse interaction effect
+  useEffect(() => {
+    if (!wrapperRef.current) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const { clientX, clientY } = e;
+      const { innerWidth, innerHeight } = window;
+
+      const xPercent = (clientX / innerWidth) * 2 - 1; // -1 to 1
+      const yPercent = (clientY / innerHeight) * 2 - 1; // -1 to 1
+
+      wrapperRef.current!.style.setProperty('--mouse-x', xPercent.toString());
+      wrapperRef.current!.style.setProperty('--mouse-y', yPercent.toString());
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-surface-100 text-black dark:bg-surface-800 dark:text-white">
+    <div
+      ref={wrapperRef}
+      className="min-h-screen flex flex-col relative overflow-hidden text-black dark:text-white transition-colors"
+      style={{
+        background:
+          'linear-gradient(to bottom right, var(--color-a), var(--color-b), var(--color-c))',
+      }}
+    >
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="blob before:animate-blob after:animate-blob-reverse"></div>
+      </div>
+
       <motion.div
         initial="hidden"
         animate="visible"
@@ -76,21 +106,6 @@ export default function Home() {
           visible: { opacity: 1, transition: { delay: 0.1 } },
         }}
       >
-        <div className="video-bg">
-          {videoSource && (
-            <video
-              ref={videoRef}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="object-cover w-full h-full"
-            >
-              <source src={videoSource} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-          )}
-        </div>
         <TopBar
           isMobile={isMobile}
           isMenuOpen={isMenuOpen}
@@ -101,7 +116,7 @@ export default function Home() {
       <div
         className="flex-grow flex items-center justify-center"
         style={{
-          paddingTop: isTopBarVisible ? '64px' : '0px',
+          paddingTop: isTopBarVisible ? '0px' : '0px',
           transition: 'padding-top 0.3s ease-in-out',
         }}
       >
@@ -114,7 +129,19 @@ export default function Home() {
               visible: { opacity: 1, y: 0 },
             }}
           >
-            <h1 className="text-2xl font-bold mb-8 text-white">
+            <h1 className="z-100 text-6xl font-extrabold mb-4" style={{ color: 'var(--surface-text)' }}>
+              CourseMap
+            </h1>
+          </motion.div>
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0, y: -50 },
+              visible: { opacity: 1, y: 0 },
+            }}
+          >
+            <h1 className="text-2xl font-bold mb-8" style={{ color: 'var(--surface-text)' }}>
               Explore Courses and Create Timetables for your semester at UVIC
             </h1>
           </motion.div>
@@ -124,7 +151,10 @@ export default function Home() {
               animate="visible"
               variants={{
                 hidden: { opacity: 0 },
-                visible: { opacity: 1, transition: { delay: 0.25 } },
+                visible: {
+                  opacity: 1,
+                  transition: { delay: 0.25 },
+                },
               }}
             >
               <Button
@@ -139,8 +169,11 @@ export default function Home() {
               initial="hidden"
               animate="visible"
               variants={{
-                hidden: { opacity: 0 }, 
-                visible: { opacity: 1, transition: { delay: 0.3 } },
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: { delay: 0.3 },
+                },
               }}
             >
               <Button
@@ -157,9 +190,13 @@ export default function Home() {
             animate="visible"
             variants={{
               hidden: { opacity: 0 },
-              visible: { opacity: 1, transition: { delay: 0.35 } },
+              visible: {
+                opacity: 1,
+                transition: { delay: 0.35 },
+              },
             }}
-            className="mt-8 text-white"
+            className="mt-8"
+            style={{ color: 'var(--surface-text)' }}
           >
             Built by{' '}
             <a
@@ -167,12 +204,14 @@ export default function Home() {
               target="_blank"
               rel="noopener noreferrer"
               className="underline"
+              style={{ color: 'var(--surface-text)' }}
             >
               @TanujDargan
             </a>
           </motion.p>
         </div>
       </div>
+
       <SpeedInsights />
       <Analytics />
     </div>
