@@ -7,9 +7,9 @@ const config: Config = {
   darkMode: 'class', // Enable dark mode via a CSS class ('dark')
 
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',       // Include all your pages
-    './components/**/*.{js,ts,jsx,tsx,mdx}',  // Include all your components
-    './app/**/*.{js,ts,jsx,tsx,mdx}',         // Include any app directory files
+    './pages/**/*.{js,ts,jsx,tsx,mdx}', // Include all your pages
+    './components/**/*.{js,ts,jsx,tsx,mdx}', // Include all your components
+    './app/**/*.{js,ts,jsx,tsx,mdx}', // Include any app directory files
     './node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}', // Include NextUI components
   ],
 
@@ -31,7 +31,7 @@ const config: Config = {
         // Text colors
         'surface-text': {
           DEFAULT: '#000000', // Text color for light theme
-          dark: '#e8eaed',    // Text color for dark theme
+          dark: '#e8eaed', // Text color for dark theme
         },
 
         // Primary color palette
@@ -89,40 +89,22 @@ const config: Config = {
       // Define border radius values
       borderRadius: {
         none: '0',
-        sm: '0.125rem',      // 2px
-        DEFAULT: '0.25rem',  // 4px
-        md: '0.375rem',      // 6px
-        lg: '0.5rem',        // 8px
-        xl: '0.75rem',       // 12px
-        '2xl': '1rem',       // 16px
-        '3xl': '1.5rem',     // 24px
+        sm: '0.125rem', // 2px
+        DEFAULT: '0.25rem', // 4px
+        md: '0.375rem', // 6px
+        lg: '0.5rem', // 8px
+        xl: '0.75rem', // 12px
+        '2xl': '1rem', // 16px
+        '3xl': '1.5rem', // 24px
         full: '9999px',
       },
 
-      // Keyframes for animations
-      keyframes: {
-        'accordion-down': {
-          from: { height: '0' },
-          to: { height: 'var(--radix-accordion-content-height)' },
-        },
-        'accordion-up': {
-          from: { height: 'var(--radix-accordion-content-height)' },
-          to: { height: '0' },
-        },
-      },
-
-      // Define animations using the keyframes
-      animation: {
-        'accordion-down': 'accordion-down 0.2s ease-out',
-        'accordion-up': 'accordion-up 0.2s ease-out',
-      },
+      // Removed complex keyframes and animations
+      // Keyframes and animations are now defined in page.css
     },
   },
 
-  plugins: [
-    require('tailwindcss-animate'), // For animation utilities
-    nextui(),                       // Include NextUI plugin
-  ],
+  plugins: [require('tailwindcss-animate'), nextui()],
 };
 
 export default config;

@@ -4,6 +4,8 @@
 @tailwind utilities;
 
 /* Define CSS variables */
+/* Removed @property declarations */
+/*
 @property --color-a {
   syntax: "<color>";
   inherits: true;
@@ -29,6 +31,7 @@
   inherits: true;
   initial-value: 0;
 }
+*/
 
 /* Updated Keyframes for Blob Animations */
 @keyframes blob {
@@ -67,6 +70,34 @@
   }
 }
 
+/* Define Keyframes for Gradient Animation */
+@keyframes gradient-change {
+  0% {
+    background: linear-gradient(
+      45deg,
+      var(--gradient-1-1),
+      var(--gradient-1-2),
+      var(--gradient-1-3)
+    );
+  }
+  50% {
+    background: linear-gradient(
+      45deg,
+      var(--gradient-2-1),
+      var(--gradient-2-2),
+      var(--gradient-2-3)
+    );
+  }
+  100% {
+    background: linear-gradient(
+      45deg,
+      var(--gradient-1-1),
+      var(--gradient-1-2),
+      var(--gradient-1-3)
+    );
+  }
+}
+
 /* Blob container */
 .blob {
   position: absolute;
@@ -82,11 +113,13 @@
   position: absolute;
   background: linear-gradient(
     45deg,
-    var(--blob-color-from),
-    var(--blob-color-to)
+    var(--gradient-1-1),
+    var(--gradient-1-2),
+    var(--gradient-1-3)
   );
   filter: blur(50px) brightness(1);
   border-radius: 25%;
+  animation: gradient-change 30s infinite ease-in-out;
 }
 
 .blob::before {
@@ -95,8 +128,7 @@
   width: 70%;
   height: 50%;
   transform-origin: 60%;
-  animation: blob 20s infinite;
-  animation-timing-function: linear;
+  animation: blob 20s infinite linear, gradient-change 30s infinite ease-in-out;
 }
 
 .blob::after {
@@ -105,8 +137,7 @@
   width: 70%;
   height: 80%;
   transform-origin: 60%;
-  animation: blob-reverse 25s infinite;
-  animation-timing-function: linear;
+  animation: blob-reverse 25s infinite linear, gradient-change 30s infinite ease-in-out;
 }
 
 /* Smooth Gradient Transition */
