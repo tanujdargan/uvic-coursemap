@@ -535,11 +535,7 @@ export default function ScheduleBuilderPage() {
                   } bottom-0 left-0 w-64 overflow-y-auto`
                 : 'overflow-y-auto'
             }`}
-            style={
-              !isMobile
-                ? { width: leftSidebarWidth }
-                : undefined
-            }
+            style={!isMobile ? { width: leftSidebarWidth } : undefined}
           >
             <LeftSidebar
               searchTerm={searchTerm}
@@ -602,11 +598,7 @@ export default function ScheduleBuilderPage() {
                   } bottom-0 right-0 w-64 overflow-y-auto`
                 : 'overflow-y-auto'
             }`}
-            style={
-              !isMobile
-                ? { width: rightSidebarWidth }
-                : undefined
-            }
+            style={!isMobile ? { width: rightSidebarWidth } : undefined}
           >
             <RightSidebar
               selectedCourse={selectedCourse}
@@ -614,8 +606,8 @@ export default function ScheduleBuilderPage() {
               selectedSectionsByType={selectedSectionsByType}
               handleSectionSelection={handleSectionSelection}
               handleExportICS={handleExportICS}
-              handleSaveTimetable={() => saveTimetable(currentTimetableName)}
-              handleDeleteTimetable={() => deleteTimetable(currentTimetableName)}
+              handleSaveTimetable={saveTimetable}
+              handleDeleteTimetable={deleteTimetable}
               timetables={timetables}
               currentTimetableName={currentTimetableName}
               setCurrentTimetableName={setCurrentTimetableName}

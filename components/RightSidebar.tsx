@@ -13,7 +13,7 @@ interface RightSidebarProps {
   handleSectionSelection: (type: string, crnValue: string) => void;
   handleExportICS: () => void;
   handleSaveTimetable: (timetableName: string) => void;
-  handleDeleteTimetable: () => void;
+  handleDeleteTimetable: (timetableName: string) => void; // Updated to accept timetableName
   timetables: any[];
   currentTimetableName: string;
   setCurrentTimetableName: (name: string) => void;
@@ -91,7 +91,6 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
     };
 
     if (selectedCourse && selectedCourse.sections.length > 0) {
-      // Get the instructor name from the first section (adjust if necessary)
       const instructorName = selectedCourse.sections[0].instructor;
       fetchProfessorRating(instructorName);
     } else {
@@ -99,7 +98,6 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
     }
   }, [selectedCourse]);
 
-  // Fetch course details when the selected course changes
   useEffect(() => {
     const fetchCourseDetails = async (courseId: string) => {
       try {
@@ -277,24 +275,26 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
             );
           })}
 
-          {/* Seat Information in the specified format */}
-          <div className="mt-4 mb-6"> {/* Added margin-bottom for spacing */}
+          {/* Seat Information */}
+          <div className="mt-4 mb-6">
             <h3 className="text-md font-semibold mb-2">Seat Availability</h3>
             {isFetchingSeatData && <p>Loading seat information...</p>}
             {seatDataError && <p className="text-red-500">{seatDataError}</p>}
             {seatData && (
               <div>
                 <p>
-                  <strong>Seats:</strong> {seatData.data.Seats.Actual} / {seatData.data.Seats.Capacity} ({seatData.data.Seats.Remaining} remaining)
+                  <strong>Seats:</strong> {seatData.data.Seats.Actual} /{' '}
+                  {seatData.data.Seats.Capacity} ({seatData.data.Seats.Remaining} remaining)
                 </p>
                 <p>
-                  <strong>Waitlist:</strong> {seatData.data.Waitlist.Actual} / {seatData.data.Waitlist.Capacity} ({seatData.data.Waitlist.Remaining} remaining)
+                  <strong>Waitlist:</strong> {seatData.data.Waitlist.Actual} /{' '}
+                  {seatData.data.Waitlist.Capacity} ({seatData.data.Waitlist.Remaining} remaining)
                 </p>
               </div>
             )}
           </div>
 
-          {/* Timetable Name Input moved below Seat Information */}
+          {/* Timetable Name Input */}
           <div className="timetable-name-container" style={{ paddingBottom: '10px' }}>
             <label htmlFor="timetable-name">Timetable Name:</label>
             <div style={{ paddingBottom: '4px' }}></div>
@@ -352,7 +352,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
           {/* Delete Timetable Button */}
           <button
             className="mt-2 w-full bg-red-600 hover:bg-red-500 text-white py-2 px-4 rounded"
-            onClick={handleDeleteTimetable}
+            onClick={() => handleDeleteTimetable(timetableNameInput)}
           >
             Delete Timetable
           </button>
@@ -381,4 +381,5 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
     </div>
   );
 };
+
 export default RightSidebar;
