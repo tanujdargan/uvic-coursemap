@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -55,7 +54,8 @@
   }
 
   body {
-    overflow-x: hidden;
+    overflow: hidden;
+    height: 100dvh; /* Use dynamic viewport height */
     background-color: var(--surface-100);
     color: var(--surface-text);
   }
@@ -109,18 +109,6 @@
 .bg-white {
   background-color: var(--surface-text);
 }
-
-/* Video Background Styling */
-.video-bg video {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 0;
-}
-
 /* Remove hover background color but retain focus styles */
 
 .no-hover-highlight:hover {
@@ -134,4 +122,18 @@
 
 .no-hover-highlight:focus:not(:focus-visible) {
   outline: none; /* Remove outline when not focus-visible */
+}
+
+/* Main container should fill the viewport */
+.main-container {
+  height: 100dvh;
+  overflow: auto; /* Allow scrolling within the container if needed */
+}
+
+/* Check for any elements causing overflow */
+.some-element {
+  /* Ensure no unexpected margins or paddings */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Include padding and border in element's total width and height */
 }

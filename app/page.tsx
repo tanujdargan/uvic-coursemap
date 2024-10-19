@@ -7,8 +7,14 @@ import TopBar from '@/components/TopBar';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { motion } from 'framer-motion';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import './page.css'; // Import the CSS file for custom styles
+
+// Define gradients outside the component to prevent re-definition on every render
+const gradients = [
+  ['var(--gradient-1-1)', 'var(--gradient-1-2)', 'var(--gradient-1-3)'],
+  ['var(--gradient-2-1)', 'var(--gradient-2-2)', 'var(--gradient-2-3)'],
+];
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState<boolean>(false);
@@ -19,12 +25,6 @@ export default function Home() {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [gradientIndex, setGradientIndex] = useState<number>(0);
 
-  // Updated list of 2 gradients using CSS variables
-  const gradients = [
-    ['var(--gradient-1-1)', 'var(--gradient-1-2)', 'var(--gradient-1-3)'], // Gradient 1
-    ['var(--gradient-2-1)', 'var(--gradient-2-2)', 'var(--gradient-2-3)'], // Gradient 2
-  ];
-
   // Update gradient index every 15 seconds
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -32,7 +32,7 @@ export default function Home() {
     }, 15000); // Update every 15 seconds
 
     return () => clearInterval(intervalId);
-  }, [gradients.length]);
+  }, []); // Removed gradients.length from dependencies
 
   // Update CSS variables when gradient index changes
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function Home() {
     wrapperRef.current.style.setProperty('--color-a', a);
     wrapperRef.current.style.setProperty('--color-b', b);
     wrapperRef.current.style.setProperty('--color-c', c);
-  }, [gradientIndex, gradients]);
+  }, [gradientIndex]); // Removed gradients from dependencies
 
   // Handle mobile state
   useEffect(() => {
@@ -62,25 +62,37 @@ export default function Home() {
     };
   }, []);
 
-  // Mouse interaction effect
+  // Mouse interaction effect with throttling
   useEffect(() => {
     if (!wrapperRef.current) return;
 
+    let animationFrameId: number;
+
     const handleMouseMove = (e: MouseEvent) => {
-      const { clientX, clientY } = e;
-      const { innerWidth, innerHeight } = window;
+      // Cancel the previous animation frame
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
 
-      const xPercent = (clientX / innerWidth) * 2 - 1; // -1 to 1
-      const yPercent = (clientY / innerHeight) * 2 - 1; // -1 to 1
+      animationFrameId = requestAnimationFrame(() => {
+        const { clientX, clientY } = e;
+        const { innerWidth, innerHeight } = window;
 
-      wrapperRef.current!.style.setProperty('--mouse-x', xPercent.toString());
-      wrapperRef.current!.style.setProperty('--mouse-y', yPercent.toString());
+        const xPercent = (clientX / innerWidth) * 2 - 1; // -1 to 1
+        const yPercent = (clientY / innerHeight) * 2 - 1; // -1 to 1
+
+        wrapperRef.current!.style.setProperty('--mouse-x', xPercent.toString());
+        wrapperRef.current!.style.setProperty('--mouse-y', yPercent.toString());
+      });
     };
 
     window.addEventListener('mousemove', handleMouseMove);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
     };
   }, []);
 
@@ -129,7 +141,10 @@ export default function Home() {
               visible: { opacity: 1, y: 0 },
             }}
           >
-            <h1 className="z-100 text-6xl font-extrabold mb-4" style={{ color: 'var(--surface-text)' }}>
+            <h1
+              className="z-100 text-6xl font-extrabold mb-4"
+              style={{ color: 'var(--surface-text)' }}
+            >
               CourseMap
             </h1>
           </motion.div>
@@ -141,7 +156,10 @@ export default function Home() {
               visible: { opacity: 1, y: 0 },
             }}
           >
-            <h1 className="text-2xl font-bold mb-8" style={{ color: 'var(--surface-text)' }}>
+            <h1
+              className="text-2xl font-bold mb-8"
+              style={{ color: 'var(--surface-text)' }}
+            >
               Explore Courses and Create Timetables for your semester at UVIC
             </h1>
           </motion.div>
