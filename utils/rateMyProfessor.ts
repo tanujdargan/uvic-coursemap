@@ -5,7 +5,7 @@ const HEADERS = {
   Accept: "*/*",
   "Accept-Language": "en-US,en;q=0.5",
   "Content-Type": "application/json",
-  Authorization: "Basic dGVzdDp0ZXN0",
+  Authorization: `Basic ${process.env.RMP_AUTH_TOKEN}`,
   "Sec-GPC": "1",
   "Sec-Fetch-Dest": "empty",
   "Sec-Fetch-Mode": "cors",
