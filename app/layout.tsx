@@ -8,7 +8,7 @@ import { ThemeProvider } from 'next-themes';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'UVIC Course Explorer',
+  title: 'UVIC CourseMap',
   description: 'Explore courses and create timetables for your semester at UVIC',
 };
 
