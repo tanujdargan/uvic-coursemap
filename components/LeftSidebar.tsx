@@ -1,3 +1,5 @@
+// components/LeftSidebar.tsx
+
 'use client';
 
 import React from 'react';
@@ -21,7 +23,6 @@ import {
 
 // Import interfaces and utility functions
 import { Course, Subject } from '../utils/interfaces';
-
 
 // Define the props interface
 interface LeftSidebarProps {
@@ -48,7 +49,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   convertTermToString,
 }) => {
   return (
-    <div className="w-full md:w-1/1 border-r border-surface-300 flex flex-col bg-surface-100 absolute md:relative z-10 left-0 top-0 h-full">
+    <div className="w-full md:w-1/1 border-r border-surface-300 flex flex-col bg-surface-100 dark:bg-surface-800 absolute md:relative z-10 left-0 top-0 h-full">
       <div className="p-4 border-b border-surface-300">
         <div className="relative mb-2">
           <Search className="absolute left-2 top-2 h-5 w-5 text-surface-500" />
@@ -57,14 +58,14 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
             placeholder="Search for courses"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-surface-300 border-surface-400 text-white placeholder-surface-500 rounded-md"
+            className="pl-10 bg-surface-300 dark:bg-surface-700 border-surface-400 text-black dark:text-white placeholder-surface-500 rounded-md"
           />
         </div>
         <Select value={selectedTerm} onValueChange={(value) => setSelectedTerm(value)}>
-          <SelectTrigger className="w-full bg-surface-300 border-surface-400 text-surface-text dark:text-white placeholder-surface-500 rounded-md">
+          <SelectTrigger className="w-full bg-surface-300 dark:bg-surface-700 border-surface-400 text-black dark:text-white placeholder-surface-500 rounded-md">
             <SelectValue placeholder="Select a term" />
           </SelectTrigger>
-          <SelectContent className="bg-surface-300">
+          <SelectContent className="bg-surface-300 dark:bg-surface-700">
             {terms.map((term) => (
               <SelectItem key={term} value={term.toString()}>
                 {convertTermToString(term)}
@@ -77,7 +78,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
         <Accordion type="multiple" className="w-full">
           {filteredSubjects.map((subject) => (
             <AccordionItem key={subject.id} value={subject.id}>
-              <AccordionTrigger className="px-4 text-surface-text dark:text-white">
+              <AccordionTrigger className="px-4 text-black dark:text-white">
                 {subject.name}
               </AccordionTrigger>
               <AccordionContent>
@@ -88,7 +89,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                     <Button
                       key={`${course.subject}-${course.course_number}`}
                       variant="ghost"
-                      className="w-full justify-start px-4 py-2 text-sm text-surface-text dark:text-white"
+                      className="w-full justify-start px-4 py-2 text-sm text-black dark:text-white"
                       onClick={() => handleCourseClick(course)}
                     >
                       {course.subject} {course.course_number}: {course.course_name}

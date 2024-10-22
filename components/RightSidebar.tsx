@@ -124,13 +124,15 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   }, [selectedCourse]);
 
   return (
-    <div className="bg-surface-100 h-full w-full p-4 overflow-y-auto border-l border-surface-300">
+    <div className="bg-surface-100 dark:bg-surface-800 h-full w-full p-4 overflow-y-auto border-l border-surface-300">
       {selectedCourse ? (
         <>
-          <h2 className="text-xl font-bold mb-2">
+          <h2 className="text-xl font-bold mb-2 text-black dark:text-white">
             {selectedCourse.subject} {selectedCourse.course_number}
           </h2>
-          <h3 className="text-lg font-semibold mb-2">{selectedCourse.course_name}</h3>
+          <h3 className="text-lg font-semibold mb-2 text-black dark:text-white">
+            {selectedCourse.course_name}
+          </h3>
 
           {/* View Details Toggle */}
           <button
@@ -376,7 +378,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
           </button>
         </>
       ) : (
-        <p className="text-center">Select a course to view sections</p>
+        <p className="text-center text-black dark:text-white">Select a course to view sections</p>
       )}
     </div>
   );
