@@ -27,6 +27,19 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../../styles/Calendar.css';
 import 'react-resizable/css/styles.css';
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { HexColorPicker } from 'react-colorful';
+
 // Define interfaces
 interface EventInteractionArgs {
   event: CalendarEvent;
@@ -90,6 +103,14 @@ export default function ScheduleBuilderPage() {
   const [isFetchingSeatData, setIsFetchingSeatData] = useState<boolean>(false); // Add state for fetching status
   const [seatDataError, setSeatDataError] = useState<string | null>(null); // Add state for error handling
   const [customEvents, setCustomEvents] = useState<CalendarEvent[]>([]); // New state for custom events
+  const [isCustomEventDialogOpen, setIsCustomEventDialogOpen] = useState<boolean>(false);
+  const [customEventTitle, setCustomEventTitle] = useState<string>('');
+  const [customEventDurationOption, setCustomEventDurationOption] = useState<string>('15 minutes');
+  const [isCustomDuration, setIsCustomDuration] = useState<boolean>(false);
+  const [customDurationHours, setCustomDurationHours] = useState<number>(0);
+  const [customDurationMinutes, setCustomDurationMinutes] = useState<number>(0);
+  const [slotInfoForCustomEvent, setSlotInfoForCustomEvent] = useState<SlotInfo | null>(null);
+  const [customEventColor, setCustomEventColor] = useState<string>('#9e9e9e'); // Default color
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -547,18 +568,73 @@ export default function ScheduleBuilderPage() {
 
   // Handle slot selection to add a new custom event
   const handleSlotSelect = (slotInfo: SlotInfo) => {
-    const title = prompt('Enter event title:');
-    if (title) {
-      const newEvent: CalendarEvent = {
-        id: new Date().getTime(), // Unique ID based on timestamp
-        title,
-        start: slotInfo.start,
-        end: slotInfo.end,
-        color: '#9e9e9e', // Default color for custom events
-      };
-      setCustomEvents((prevEvents) => [...prevEvents, newEvent]);
-      toast.success('Custom event added.');
+    // Store slotInfo in state
+    setSlotInfoForCustomEvent(slotInfo);
+    // Open the dialog
+    setIsCustomEventDialogOpen(true);
+    // Reset form inputs
+    setCustomEventTitle('');
+    setCustomEventDurationOption('15 minutes');
+    setIsCustomDuration(false);
+    setCustomDurationHours(0);
+    setCustomDurationMinutes(0);
+  };
+
+  // Add the handleAddCustomEvent function
+  const handleAddCustomEvent = () => {
+    if (!customEventTitle.trim()) {
+      toast.error('Please enter an event title.');
+      return;
     }
+    if (!slotInfoForCustomEvent) {
+      toast.error('Invalid slot selected.');
+      return;
+    }
+
+    const start = slotInfoForCustomEvent.start;
+    let end: Date;
+
+    if (isCustomDuration) {
+      const totalMinutes = customDurationHours * 60 + customDurationMinutes;
+      if (totalMinutes <= 0) {
+        toast.error('Please enter a valid duration.');
+        return;
+      }
+      end = new Date(start.getTime() + totalMinutes * 60000);
+    } else {
+      // Parse selected duration
+      let durationMinutes = 0;
+      switch (customEventDurationOption) {
+        case '15 minutes':
+          durationMinutes = 15;
+          break;
+        case '30 minutes':
+          durationMinutes = 30;
+          break;
+        case '45 minutes':
+          durationMinutes = 45;
+          break;
+        case '1 hour':
+          durationMinutes = 60;
+          break;
+        default:
+          durationMinutes = 15; // default to 15 minutes
+      }
+      end = new Date(start.getTime() + durationMinutes * 60000);
+    }
+
+    const newEvent: CalendarEvent = {
+      id: new Date().getTime(),
+      title: customEventTitle,
+      start,
+      end,
+      color: customEventColor, // Use the selected color
+    };
+    setCustomEvents((prevEvents) => [...prevEvents, newEvent]);
+    toast.success('Custom event added.');
+
+    // Close the dialog
+    setIsCustomEventDialogOpen(false);
   };
 
   if (loading) {
@@ -731,6 +807,95 @@ export default function ScheduleBuilderPage() {
           )}
         </div>
       </div>
+      {/* Custom Event Dialog */}
+      <Dialog open={isCustomEventDialogOpen} onOpenChange={setIsCustomEventDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Custom Event</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Event Title */}
+            <div className="space-y-2">
+              <Label htmlFor="event-title">Event Title</Label>
+              <Input
+                id="event-title"
+                placeholder="Enter event title"
+                value={customEventTitle}
+                onChange={(e) => setCustomEventTitle(e.target.value)}
+              />
+            </div>
+            {/* Duration Dropdown */}
+            <div className="space-y-2">
+              <Label htmlFor="event-duration">Duration</Label>
+              <Select
+                value={customEventDurationOption}
+                onValueChange={(value) => {
+                  setCustomEventDurationOption(value);
+                  setIsCustomDuration(value === 'Custom');
+                }}
+              >
+                <SelectTrigger id="event-duration">
+                  <SelectValue placeholder="Select duration" />
+                </SelectTrigger>
+                <SelectContent className="bg-surface-800">
+                  <SelectItem value="15 minutes">15 minutes</SelectItem>
+                  <SelectItem value="30 minutes">30 minutes</SelectItem>
+                  <SelectItem value="45 minutes">45 minutes</SelectItem>
+                  <SelectItem value="1 hour">1 hour</SelectItem>
+                  <SelectItem value="Custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* If Custom is selected, show time input */}
+            {isCustomDuration && (
+              <div className="space-y-2">
+                <Label>Custom Duration</Label>
+                <div className="flex space-x-2 items-center">
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={23}
+                      value={customDurationHours}
+                      onChange={(e) => setCustomDurationHours(Number(e.target.value))}
+                      className="w-20"
+                    />
+                    <span>Hours</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={55}
+                      step={5}
+                      value={customDurationMinutes}
+                      onChange={(e) => setCustomDurationMinutes(Number(e.target.value))}
+                      className="w-20"
+                    />
+                    <span>Minutes</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Color Picker */}
+            <div className="space-y-2">
+              <Label htmlFor="event-color">Event Color</Label>
+              <div className="flex items-center space-x-4">
+                <HexColorPicker color={customEventColor} onChange={setCustomEventColor} />
+                <Input
+                  id="event-color"
+                  value={customEventColor}
+                  onChange={(e) => setCustomEventColor(e.target.value)}
+                  className="w-24"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleAddCustomEvent}>Add Event</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
