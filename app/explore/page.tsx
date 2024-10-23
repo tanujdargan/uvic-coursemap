@@ -237,8 +237,22 @@ export default function ExplorePage() {
       const instructorNames = new Set<string>();
       selectedCourse.sections.forEach((section) => {
         const instructorName = section.instructor.trim();
-        if (instructorName && instructorName !== '') {
+        if (instructorName && instructorName !== '' && instructorName !== 'TBA') {
           instructorNames.add(instructorName);
+        } else if (instructorName === 'TBA') {
+          // Set default value for TBA
+          setRatingsCache((prevCache) => ({
+            ...prevCache,
+            [instructorName]: {
+              avgRating: -1,
+              avgDifficulty: -1,
+              wouldTakeAgainPercent: -1,
+              numRatings: 0,
+              formattedName: 'TBA',
+              department: '',
+              link: '',
+            },
+          }));
         }
       });
 
@@ -480,7 +494,7 @@ export default function ExplorePage() {
                                 <p>
                                   <strong>Instructor:</strong> {section.instructor}
                                 </p>
-                                {section.instructor && section.instructor.trim() !== '' && (
+                                {section.instructor && section.instructor.trim() !== '' && section.instructor !== 'TBA' && (
                                   <>
                                     <p>
                                       <strong>Rate My Prof Rating:</strong>{' '}
@@ -620,3 +634,4 @@ function convertTermToString(termCode: number): string {
   }
   return `${semester} ${year}`;
 }
+
