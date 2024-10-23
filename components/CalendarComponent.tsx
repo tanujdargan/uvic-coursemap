@@ -2,12 +2,23 @@
 'use client';
 
 import React from 'react';
-import { Calendar } from 'react-big-calendar';
-import CustomHeader from './CustomHeader';
+import {
+  Calendar,
+  dateFnsLocalizer,
+  CalendarProps,
+  Event as RBCEvent,
+  View,
+} from 'react-big-calendar';
+import withDragAndDrop, {
+  withDragAndDropProps,
+} from 'react-big-calendar/lib/addons/dragAndDrop';
+
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
+
+import CustomHeader from './CustomHeader';
 import '../styles/Calendar.css';
 
-import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 
@@ -23,12 +34,33 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-interface CalendarEvent {
+// Define the CalendarEvent interface
+export interface CalendarEvent {
+  id: number; // Unique identifier for events
   title: string;
   start: Date;
   end: Date;
   color?: string;
-  crn: number;
+  crn?: number; // Optional, since custom events may not have a CRN
+}
+
+// Define the EventInteractionArgs interface
+interface EventInteractionArgs {
+  event: CalendarEvent;
+  start: Date;
+  end: Date;
+  allDay?: boolean;
+  isAllDay?: boolean;
+  resourceId?: any;
+}
+
+// Define the SlotInfo interface
+interface SlotInfo {
+  start: Date;
+  end: Date;
+  slots: Date[];
+  action: 'select' | 'click' | 'doubleClick';
+  resourceId?: any;
 }
 
 interface CalendarComponentProps {
@@ -38,11 +70,20 @@ interface CalendarComponentProps {
     start: Date,
     end: Date,
     isSelected: boolean
-  ) => { style: React.CSSProperties };
+  ) => { className?: string; style?: React.CSSProperties };
   isMobile: boolean;
-  onEventDoubleClick?: (event: CalendarEvent) => void;
-  onSelectEvent?: (event: CalendarEvent) => void;
+  onEventDoubleClick?: (event: CalendarEvent, e: React.SyntheticEvent<HTMLElement>) => void;
+  onSelectEvent?: (event: CalendarEvent, e: React.SyntheticEvent<HTMLElement>) => void;
+  onEventDrop?: (args: EventInteractionArgs) => void;
+  onEventResize?: (args: EventInteractionArgs) => void;
+  onSlotSelect?: (slotInfo: SlotInfo) => void;
 }
+
+// Use the drag-and-drop higher-order component with correct generics
+const DragAndDropCalendar = withDragAndDrop<
+  CalendarEvent,
+  React.FC<CalendarComponentProps>
+>(Calendar);
 
 const CalendarComponent: React.FC<CalendarComponentProps> = ({
   calendarEvents,
@@ -50,13 +91,17 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
   isMobile,
   onEventDoubleClick,
   onSelectEvent,
+  onEventDrop,
+  onEventResize,
+  onSlotSelect,
 }) => {
+  // Default event style if none is provided
   const defaultEventStyleGetter = (
     event: CalendarEvent,
     start: Date,
     end: Date,
     isSelected: boolean
-  ) => {
+  ): { className?: string; style?: React.CSSProperties } => {
     const backgroundColor = event.color || '#3c4043';
     const style = {
       backgroundColor,
@@ -80,12 +125,12 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
 
   return (
     <div id="calendar-container" className="flex flex-col h-full overflow-hidden">
-      <Calendar
+      <DragAndDropCalendar
         localizer={localizer}
         events={calendarEvents}
         defaultView="week"
-        startAccessor="start"
-        endAccessor="end"
+        startAccessor={(event: CalendarEvent) => event.start}
+        endAccessor={(event: CalendarEvent) => event.end}
         style={{ flex: '1 1 auto', width: '100%' }}
         eventPropGetter={eventStyleGetter || defaultEventStyleGetter}
         components={{
@@ -100,6 +145,20 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
         toolbar={false} // Hide the default toolbar
         onDoubleClickEvent={onEventDoubleClick}
         onSelectEvent={onSelectEvent}
+        //Somehow fixed the issue here, do not ask how. do not change it. I will find you if you do.
+        onEventDrop={(args) => {
+          const start = typeof args.start === 'string' ? new Date(args.start) : args.start;
+          const end = typeof args.end === 'string' ? new Date(args.end) : args.end;
+          onEventDrop && onEventDrop({ ...args, start, end });
+        }}
+        onEventResize={(args) => {
+          const start = typeof args.start === 'string' ? new Date(args.start) : args.start;
+          const end = typeof args.end === 'string' ? new Date(args.end) : args.end;
+          onEventResize && onEventResize({ ...args, start, end });
+        }}
+        selectable
+        resizable
+        onSelectSlot={onSlotSelect}
       />
     </div>
   );

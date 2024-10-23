@@ -31,7 +31,6 @@ export const generateICS = (events: any[]) => {
 const formatDate = (date: Date) => {
   return format(date, "yyyyMMdd'T'HHmmss");
 };
-
 const escapeICS = (str: string) => {
   return str
     .replace(/\\/g, '\\\\')

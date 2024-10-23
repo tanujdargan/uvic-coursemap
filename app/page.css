@@ -139,7 +139,6 @@
   transform-origin: 60%;
   animation: blob-reverse 25s infinite linear, gradient-change 30s infinite ease-in-out;
 }
-
 /* Smooth Gradient Transition */
 .transition-colors {
   transition:

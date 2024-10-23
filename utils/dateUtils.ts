@@ -52,4 +52,3 @@ export function isSameDay(d1: Date, d2: Date): boolean {
     eventDate.setHours(0, 0, 0, 0); // Reset time
     return eventDate;
   }
-  

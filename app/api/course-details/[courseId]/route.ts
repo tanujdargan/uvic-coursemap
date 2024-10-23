@@ -24,7 +24,6 @@ export async function GET(
     }
 
     const { _id, ...courseDetailWithoutId } = courseDetail;
-
     // Map the MongoDB fields to TypeScript-friendly property names
     const result = {
       pid: courseDetailWithoutId['PID'],

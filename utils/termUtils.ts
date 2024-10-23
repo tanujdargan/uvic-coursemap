@@ -22,7 +22,6 @@ export function convertTermToString(termCode: number): string {
   
     return `${semester} ${year}`;
   }
-  
   export function getCurrentTermCode(): number {
     const now = new Date();
     const year = now.getFullYear();
@@ -37,4 +36,3 @@ export function convertTermToString(termCode: number): string {
   
     return parseInt(`${year}${semesterCode}`);
   }
-  

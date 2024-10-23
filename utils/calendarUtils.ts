@@ -52,6 +52,5 @@ export function generateCalendarEvents(
         .filter(Boolean);
     })
     .filter(Boolean);
-
   return events;
 }

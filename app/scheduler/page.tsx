@@ -10,7 +10,7 @@ import RightSidebar from '@/components/RightSidebar';
 
 import { Toaster, toast } from 'sonner';
 
-import CalendarComponent from '@/components/CalendarComponent';
+import CalendarComponent, { CalendarEvent } from '@/components/CalendarComponent';
 
 import { useCourses } from '@/hooks/useCourses';
 import { useTimetable } from '@/hooks/useTimetable';
@@ -26,6 +26,24 @@ import { Course, Section } from '@/utils/interfaces';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../../styles/Calendar.css';
 import 'react-resizable/css/styles.css';
+
+// Define interfaces
+interface EventInteractionArgs {
+  event: CalendarEvent;
+  start: Date;
+  end: Date;
+  allDay?: boolean;
+  isAllDay?: boolean;
+  resourceId?: any;
+}
+
+interface SlotInfo {
+  start: Date;
+  end: Date;
+  slots: Date[];
+  action: 'select' | 'click' | 'doubleClick';
+  resourceId?: any;
+}
 
 export default function ScheduleBuilderPage() {
   const {
@@ -71,6 +89,7 @@ export default function ScheduleBuilderPage() {
   const [seatData, setSeatData] = useState<any>(null); // Add state for seat data
   const [isFetchingSeatData, setIsFetchingSeatData] = useState<boolean>(false); // Add state for fetching status
   const [seatDataError, setSeatDataError] = useState<string | null>(null); // Add state for error handling
+  const [customEvents, setCustomEvents] = useState<CalendarEvent[]>([]); // New state for custom events
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -229,18 +248,7 @@ export default function ScheduleBuilderPage() {
     const selectedSection = selectedCourse?.sections.find((section) => section.crn === crn);
 
     if (selectedSection) {
-      const hasConflict = hasTimeConflict(selectedSection, selectedSections);
-
-      if (hasConflict) {
-        toast.error(`Time conflict detected for section ${selectedSection.section}`);
-        return;
-      }
-
-      setSelectedSectionsByType((prev) => ({
-        ...prev,
-        [type]: selectedSection,
-      }));
-
+      // Remove existing sections of the same type, subject, and course_number
       setSelectedSections((prev) => {
         const filteredSections = prev.filter(
           (s) =>
@@ -251,27 +259,34 @@ export default function ScheduleBuilderPage() {
             )
         );
 
+        // Add the new section
         const newSections = [...filteredSections, selectedSection];
 
         return newSections;
       });
 
+      // Update selectedSectionsByType
+      setSelectedSectionsByType((prev) => ({
+        ...prev,
+        [type]: selectedSection,
+      }));
+
       // Assign a color to the event
       assignColorToSection(selectedSection);
 
+      // Provide a toast notification with an undo option
       toast.success(
         `${selectedSection.subject} ${selectedSection.course_number} - Section ${selectedSection.section} added`,
         {
           action: {
             label: 'Undo',
             onClick: () => {
+              // Remove the section
               setSelectedSectionsByType((prev) => ({
                 ...prev,
                 [type]: null,
               }));
-
               setSelectedSections((prev) => prev.filter((s) => s.crn !== crn));
-
               // Release the color
               releaseColorOfSection(crn);
             },
@@ -280,14 +295,14 @@ export default function ScheduleBuilderPage() {
       );
 
       // Fetch seat data for the selected section
-      await fetchSeatData(selectedSection.term.toString(), selectedSection.crn.toString()); // Fetch seat data
+      await fetchSeatData(selectedSection.term.toString(), selectedSection.crn.toString());
     }
   };
 
   useEffect(() => {
-    const events = generateCalendarEvents(selectedSections, eventColors);
-    setCalendarEvents(events);
-  }, [selectedSections, eventColors]);
+    const courseEvents = generateCalendarEvents(selectedSections, eventColors);
+    setCalendarEvents([...courseEvents, ...customEvents]);
+  }, [selectedSections, eventColors, customEvents]);
 
   const handleExportICS = () => {
     if (calendarEvents.length === 0) {
@@ -307,25 +322,34 @@ export default function ScheduleBuilderPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleEventDoubleClick = (event: any) => {
-    const crn = event.crn;
-    setSelectedSections((prevSections) =>
-      prevSections.filter((section) => section.crn !== crn)
-    );
-    setSelectedSectionsByType((prev) => {
-      const newSelectedSectionsByType = { ...prev };
-      for (let type in newSelectedSectionsByType) {
-        if (newSelectedSectionsByType[type]?.crn === crn) {
-          newSelectedSectionsByType[type] = null;
+  const handleEventDoubleClick = (
+    event: CalendarEvent,
+    e: React.SyntheticEvent<HTMLElement>
+  ) => {
+    if (event.crn) {
+      // Existing code for removing course events
+      const crn = event.crn;
+      setSelectedSections((prevSections) =>
+        prevSections.filter((section) => section.crn !== crn)
+      );
+      setSelectedSectionsByType((prev) => {
+        const newSelectedSectionsByType = { ...prev };
+        for (let type in newSelectedSectionsByType) {
+          if (newSelectedSectionsByType[type]?.crn === crn) {
+            newSelectedSectionsByType[type] = null;
+          }
         }
-      }
-      return newSelectedSectionsByType;
-    });
+        return newSelectedSectionsByType;
+      });
+      // Release the color
+      releaseColorOfSection(crn);
 
-    // Release the color
-    releaseColorOfSection(crn);
-
-    toast.success('Event removed from timetable');
+      toast.success('Course section removed from timetable.');
+    } else {
+      // Custom event; remove it
+      setCustomEvents((prevEvents) => prevEvents.filter((evt) => evt.id !== event.id));
+      toast.success('Custom event removed.');
+    }
   };
 
   const handleEventSelect = (event: any) => {
@@ -493,6 +517,50 @@ export default function ScheduleBuilderPage() {
     }
   };
 
+  // Handle event drag and drop
+  const handleEventDrop = (args: EventInteractionArgs) => {
+    const { event, start, end } = args;
+    if (event.crn) {
+      // It's a course event; prevent moving
+      toast.error('Cannot move course events.');
+    } else {
+      // Update custom event time
+      setCustomEvents((prevEvents) =>
+        prevEvents.map((evt) => (evt.id === event.id ? { ...evt, start, end } : evt))
+      );
+      toast.success('Custom event moved.');
+    }
+  };
+
+  // Handle event resizing
+  const handleEventResize = (args: EventInteractionArgs) => {
+    const { event, start, end } = args;
+    if (event.crn) {
+      toast.error('Cannot resize course events.');
+    } else {
+      setCustomEvents((prevEvents) =>
+        prevEvents.map((evt) => (evt.id === event.id ? { ...evt, start, end } : evt))
+      );
+      toast.success('Custom event resized.');
+    }
+  };
+
+  // Handle slot selection to add a new custom event
+  const handleSlotSelect = (slotInfo: SlotInfo) => {
+    const title = prompt('Enter event title:');
+    if (title) {
+      const newEvent: CalendarEvent = {
+        id: new Date().getTime(), // Unique ID based on timestamp
+        title,
+        start: slotInfo.start,
+        end: slotInfo.end,
+        color: '#9e9e9e', // Default color for custom events
+      };
+      setCustomEvents((prevEvents) => [...prevEvents, newEvent]);
+      toast.success('Custom event added.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-surface-100 text-black dark:bg-surface-800 dark:text-white">
@@ -571,6 +639,9 @@ export default function ScheduleBuilderPage() {
               isMobile={isMobile}
               onEventDoubleClick={handleEventDoubleClick}
               onSelectEvent={handleEventSelect}
+              onEventDrop={handleEventDrop}
+              onEventResize={handleEventResize}
+              onSlotSelect={handleSlotSelect}
             />
           </div>
 

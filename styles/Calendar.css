@@ -256,7 +256,6 @@
 .custom-header-day-number.today {
   color: var(--color-primary-100);
 }
-
 .custom-header-day-number.today {
   background-color: var(--color-primary-100);
   color: #ffffff;

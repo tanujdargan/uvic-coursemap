@@ -64,7 +64,6 @@ export async function GET(request: NextRequest) {
         }
       }
     });
-
     return NextResponse.json({ term, crn, data });
   } catch (error) {
     console.error('Error fetching seat capacity data:', error);

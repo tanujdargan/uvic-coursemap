@@ -371,7 +371,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
 
           {/* Export to ICS Button */}
           <button
-            className="mt-2 w-full bg-surface-300 hover:bg-surface-300 py-2 px-4 rounded"
+            className="mt-2 w-full export-button hover:exbhighlight text-white py-2 px-4 rounded"
             onClick={handleExportICS}
           >
             Export to .ics
@@ -383,5 +383,4 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
     </div>
   );
 };
-
 export default RightSidebar;

@@ -229,7 +229,6 @@ export default function Home() {
           </motion.p>
         </div>
       </div>
-
       <SpeedInsights />
       <Analytics />
     </div>

@@ -137,3 +137,10 @@
   padding: 0;
   box-sizing: border-box; /* Include padding and border in element's total width and height */
 }
+
+.export-button{
+  background-color: #4691c5;
+}
+.export-button:hover{
+ background-color: #59a8d0;
+}

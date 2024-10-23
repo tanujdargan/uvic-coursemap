@@ -1,5 +1,4 @@
 // app/api/ratings/[professorName]/route.ts
-
 import { NextResponse } from 'next/server';
 import { getProfessorRatingAtSchoolId } from '@/utils/rateMyProfessor';
 
