@@ -232,5 +232,6 @@ export function useTimetable(groupedCourses: Course[]) {
     deleteTimetable,
     isTimetableLoaded,
     setIsTimetableLoaded,
+    assignedColors,
   };
 }

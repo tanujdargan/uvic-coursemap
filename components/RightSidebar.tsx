@@ -23,6 +23,8 @@ interface RightSidebarProps {
   seatData: any;
   isFetchingSeatData: boolean;
   seatDataError: string | null;
+  showAllLabs: boolean; // Added new prop
+  setShowAllLabs: React.Dispatch<React.SetStateAction<boolean>>; // Added new prop
 }
 
 const RightSidebar: React.FC<RightSidebarProps> = ({
@@ -42,6 +44,8 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   seatData,
   isFetchingSeatData,
   seatDataError,
+  showAllLabs, // Added new prop
+  setShowAllLabs, // Added new prop
 }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [timetableNameInput, setTimetableNameInput] = useState(currentTimetableName);
@@ -276,6 +280,18 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
               </div>
             );
           })}
+
+          {/* Toggle to show all lab and tutorial sections */}
+          <div className="mb-4">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={showAllLabs}
+                onChange={(e) => setShowAllLabs(e.target.checked)}
+              />
+              <span className="ml-2">Show All Lab/Tutorial Sections on Timetable</span>
+            </label>
+          </div>
 
           {/* Seat Information */}
           <div className="mt-4 mb-6">

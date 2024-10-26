@@ -25,7 +25,6 @@ import { Course, Section } from '@/utils/interfaces';
 
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../../styles/Calendar.css';
-import 'react-resizable/css/styles.css';
 
 import {
   Dialog,
@@ -84,6 +83,7 @@ export default function ScheduleBuilderPage() {
     eventColors,
     assignColorToSection,
     releaseColorOfSection,
+    assignedColors, // Added this line
   } = useTimetable(groupedCourses);
 
   const isTopBarVisible = useTopBarVisibility();
@@ -111,6 +111,12 @@ export default function ScheduleBuilderPage() {
   const [customDurationMinutes, setCustomDurationMinutes] = useState<number>(0);
   const [slotInfoForCustomEvent, setSlotInfoForCustomEvent] = useState<SlotInfo | null>(null);
   const [customEventColor, setCustomEventColor] = useState<string>('#9e9e9e'); // Default color
+  const [showAllLabs, setShowAllLabs] = useState<boolean>(false);
+
+  // Add this at the top of your component or useEffect
+  useEffect(() => {
+    console.log('Selected Term:', selectedTerm);
+  }, [selectedTerm]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -194,11 +200,17 @@ export default function ScheduleBuilderPage() {
   };
 
   const eventStyleGetter = (event: any, start: any, end: any, isSelected: boolean) => {
-    const backgroundColor = event.color || '#3c4043';
+    let backgroundColor = event.color || '#3c4043';
+    let opacity = 1;
+
+    if (event.isTemporary) {
+      opacity = 0.5; // Reduce opacity for temporary events
+    }
+
     const style = {
       backgroundColor,
       borderRadius: '4px',
-      opacity: 1,
+      opacity,
       color: 'white',
       border: '0px',
       display: 'block',
@@ -213,7 +225,10 @@ export default function ScheduleBuilderPage() {
 
     ['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'].forEach((type) => {
       const sectionsOfType = course.sections
-        .filter((section) => section.schedule_type === type)
+        .filter(
+          (section) =>
+            section.schedule_type === type && section.term === parseInt(selectedTerm) // Updated line
+        )
         .sort((a, b) => a.section.localeCompare(b.section));
 
       if (sectionsOfType.length > 0) {
@@ -265,6 +280,8 @@ export default function ScheduleBuilderPage() {
   };
 
   const handleSectionSelection = async (type: string, crnValue: string) => {
+    console.log(`Section selected: Type = ${type}, CRN = ${crnValue}`); // Added logging
+
     const crn = parseInt(crnValue);
     const selectedSection = selectedCourse?.sections.find((section) => section.crn === crn);
 
@@ -282,6 +299,7 @@ export default function ScheduleBuilderPage() {
 
         // Add the new section
         const newSections = [...filteredSections, selectedSection];
+        console.log('Updated selectedSections:', newSections); // Added logging
 
         return newSections;
       });
@@ -322,9 +340,54 @@ export default function ScheduleBuilderPage() {
 
   useEffect(() => {
     const courseEvents = generateCalendarEvents(selectedSections, eventColors);
-    setCalendarEvents([...courseEvents, ...customEvents]);
-  }, [selectedSections, eventColors, customEvents]);
-
+    console.log('Course Events:', courseEvents); // Added logging
+  
+    let tempAdditionalEvents: CalendarEvent[] = [];
+  
+    if (showAllLabs && selectedCourse) {
+      const additionalSections = selectedCourse.sections.filter(
+        (section) =>
+          ['Lab', 'Tutorial'].includes(section.schedule_type) &&
+          section.term === parseInt(selectedTerm)
+      );
+  
+      // Assign a default color or use the course's assigned color
+      let additionalEventColor = '#888'; // Default grey color for labs and tutorials
+  
+      // Optionally, use the course's color if assigned
+      const courseKey = `${selectedCourse.subject}-${selectedCourse.course_number}`;
+      let courseColor = null;
+      for (const color in assignedColors) {
+        if (assignedColors[color] === courseKey) {
+          courseColor = color;
+          break;
+        }
+      }
+      if (courseColor) {
+        additionalEventColor = courseColor;
+      }
+  
+      // Generate events for lab and tutorial sections
+      tempAdditionalEvents = generateCalendarEvents(additionalSections, {}).map((event, index) => ({
+        ...event,
+        id: event.crn ? event.crn : Date.now() + index, // Ensure 'id' is assigned
+        color: additionalEventColor,
+        isTemporary: true, // Add a flag to identify temporary events
+      }));
+    }
+  
+    setCalendarEvents([...courseEvents, ...tempAdditionalEvents, ...customEvents]);
+    console.log('Calendar Events Set:', [...courseEvents, ...tempAdditionalEvents, ...customEvents]); // Added logging
+  }, [
+    selectedSections,
+    eventColors,
+    customEvents,
+    showAllLabs,
+    selectedCourse,
+    selectedTerm,
+    assignedColors,
+  ]);
+  
   const handleExportICS = () => {
     if (calendarEvents.length === 0) {
       toast.error('No events to export');
@@ -764,6 +827,8 @@ export default function ScheduleBuilderPage() {
               seatData={seatData}
               isFetchingSeatData={isFetchingSeatData}
               seatDataError={seatDataError}
+              showAllLabs={showAllLabs}
+              setShowAllLabs={setShowAllLabs}
             />
           </div>
 
