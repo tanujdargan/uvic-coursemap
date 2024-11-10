@@ -18,7 +18,7 @@ export const parseDays = (daysString: string): number[] => {
 
   // Remove any whitespace and split into individual characters
   const days = daysString.replace(/\s+/g, '').split('');
-  
+
   // Map day initials to day numbers
   return days
     .map((day) => daysMap[day.toUpperCase()])
@@ -30,10 +30,19 @@ export const generateCalendarEvents = (
   eventColors: { [crn: number]: string }
 ): CalendarEvent[] => {
   console.log('Generating events for sections:', sections);
-  
+
   const events = sections.flatMap((section) => {
     console.log(`Processing section CRN ${section.crn}:`);
     console.log(`Days: ${section.days}`);
+
+    // Check if 'days' and 'time' are defined
+    if (!section.days || !section.time) {
+      console.warn(
+        `Section CRN ${section.crn} has undefined days or time.`
+      );
+      return []; // Skip this section
+    }
+
     const daysOfWeek = parseDays(section.days);
     console.log(`Parsed Days:`, daysOfWeek);
 
@@ -43,13 +52,17 @@ export const generateCalendarEvents = (
     let endTimeString = '';
     for (const sep of timeSeparators) {
       if (section.time.includes(sep)) {
-        [startTimeString, endTimeString] = section.time.split(sep).map((s) => s.trim());
+        [startTimeString, endTimeString] = section.time
+          .split(sep)
+          .map((s) => s.trim());
         break;
       }
     }
     // If no separator found, log an error and skip this section
     if (!startTimeString || !endTimeString) {
-      console.error(`Invalid time format in section CRN ${section.crn}: ${section.time}`);
+      console.error(
+        `Invalid time format in section CRN ${section.crn}: ${section.time}`
+      );
       return []; // Skip this section
     }
 
@@ -58,14 +71,8 @@ export const generateCalendarEvents = (
     console.log(`End Time String: ${endTimeString}`);
 
     // Adjust the format string to match your actual time format
-    // Corrected the format string to 'h:mm a'
     const timeFormat = 'h:mm a';
 
-    // Since your time strings already have a space before 'am'/'pm', no need to adjust
-    // Remove or comment out the following lines if they exist:
-    // startTimeString = startTimeString.replace(/(AM|PM|am|pm)$/, ' $1');
-    // endTimeString = endTimeString.replace(/(AM|PM|am|pm)$/, ' $1');
-    
     const startTime = parse(startTimeString, timeFormat, new Date());
     const endTime = parse(endTimeString, timeFormat, new Date());
 
@@ -74,16 +81,21 @@ export const generateCalendarEvents = (
 
     // Check if parsing was successful
     if (!isValid(startTime) || !isValid(endTime)) {
-      console.error(`Invalid time format in section CRN ${section.crn}: ${section.time}`);
+      console.error(
+        `Invalid time format in section CRN ${section.crn}: ${section.time}`
+      );
       return []; // Skip this section
     }
 
     // Calculate duration in minutes
-    const durationInMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+    const durationInMinutes =
+      (endTime.getTime() - startTime.getTime()) / (1000 * 60);
 
-    // Handle cases where end time is before start time (e.g., time spans over midnight)
+    // Handle cases where end time is before start time
     if (durationInMinutes <= 0) {
-      console.error(`Invalid time range in section CRN ${section.crn}: ${section.time}`);
+      console.error(
+        `Invalid time range in section CRN ${section.crn}: ${section.time}`
+      );
       return []; // Skip this section
     }
 
@@ -105,7 +117,7 @@ export const generateCalendarEvents = (
         title: `${section.subject} ${section.course_number} - ${section.schedule_type}`,
         start: startDate,
         end: endDate,
-        color: eventColors[section.crn] || '#3c4043', // Default color if not set
+        color: eventColors[section.crn] || '#3c4043', // Default color
         crn: section.crn,
       } as CalendarEvent;
     });
