@@ -17,7 +17,8 @@ const gradients = [
 ];
 
 export default function Home() {
-  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const initialGradient = gradients[0];
+  const [isMobile, setIsMobile] = useState<boolean>(typeof window !== 'undefined' && window.innerWidth <= 768);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isTopBarVisible, setIsTopBarVisible] = useState(true);
 
@@ -47,6 +48,8 @@ export default function Home() {
 
   // Handle mobile state
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
     };
@@ -64,7 +67,7 @@ export default function Home() {
 
   // Mouse interaction effect with throttling
   useEffect(() => {
-    if (!wrapperRef.current) return;
+    if (typeof window === 'undefined' || !wrapperRef.current) return;
 
     let animationFrameId: number;
 
@@ -101,9 +104,11 @@ export default function Home() {
       ref={wrapperRef}
       className="min-h-screen flex flex-col relative overflow-hidden text-black dark:text-white transition-colors"
       style={{
-        background:
-          'linear-gradient(to bottom right, var(--color-a), var(--color-b), var(--color-c))',
-      }}
+        background: `linear-gradient(to bottom right, ${initialGradient[0]}, ${initialGradient[1]}, ${initialGradient[2]})`,
+        '--color-a': initialGradient[0],
+        '--color-b': initialGradient[1],
+        '--color-c': initialGradient[2],
+      } as React.CSSProperties}
     >
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden">
