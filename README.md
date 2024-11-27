@@ -4,8 +4,6 @@ UVic CourseMap is a tool designed to help students at the University of Victoria
 
 **Note:** This project is not affiliated with the University of Victoria (UVic) in any way. It is a personal project to assist other UVic students.
 
-### Update: Seat Availability Data is broken, this is likely not going to be fixed as UVIC has updated BAN1P or banner to now only show data when authenticated via netlink. This also means that this project will no longer be updated for any data beyond the Winter 2025 semester. (Unless I can find a way to get around this)
-
 ## Live Website
 Check out the live version of the project [here](https://uvic-coursemap.vercel.app).
 

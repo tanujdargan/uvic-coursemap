@@ -1,0 +1,59 @@
+[33mcf82146[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m Upgraded to Next.js 15 and fixed hydration issues.
+[33m03a5bf9[m Fix Crashing on days undefined (SENG 360 error)
+[33m4d3411f[m Added View All Lab/Tutorial sections toggle
+[33m5b5f4ef[m RMP Rating Issue Fixed
+[33m244a528[m Updated CustomEvent creation
+[33m4252144[m Time Conflict when switching Sections Fix
+[33mf0ba96b[m Merge branch 'master' of https://github.com/tanujdargan/uvic-coursemap
+[33m4ea4f69[m Dark Mode Issue Fix
+[33m475d461[m Delete .github/workflows/apisec-scan.yml
+[33m70f2d54[m New Icon and Updated text
+[33m7755180[m Removed Hardcoded Access Authorization
+[33m2dbda0f[m Merge branch 'master' of https://github.com/tanujdargan/uvic-coursemap
+[33m323caf2[m Fixed Timetable Naming not working
+[33mfc26350[m Create apisec-scan.yml
+[33mf3e72e9[m Create codeql.yml
+[33m79d1a65[m Fixed Vertical Scrolling on Mobile Homepage
+[33m60e841a[m Browser Crash Fix
+[33m4c2c10d[m New Animated Background
+[33me456856[m Update README.md
+[33m3cd1b12[m Added missed dependency "cheerio"
+[33mc665057[m Added Seat Capacity & Reduced Server Side Log
+[33m9154cd3[m Additional Course Details
+[33m47bd5a6[m Added Resizeable Sidebars
+[33me6fcfe9[m Updated TopBar
+[33me0fc002[m Rate My Professor Integration
+[33m444071a[m Update README.md
+[33me1da985[m Updated page.tsx
+[33ma35a47d[m Added Themes
+[33m22e6c9c[m Updated Explore Page Theming
+[33mb18ce79[m Fixes to Calendar & Scheduler Page
+[33mad863b2[m Updates to Scheduler & Explore Pages
+[33ma9df0e7[m New Background & Page Changes
+[33ma385bef[m Background Changes
+[33me9ce320[m Updated Animations & Design
+[33ma0d55e4[m Module Not Found Fix
+[33mbd36ce5[m Changed All Pages & Added Components, Hooks, Utils
+[33m91f4a7f[m Update PageLayout.tsx
+[33m7a7d1f9[m Update PageLayout.tsx
+[33m5952158[m Updated TopBar everywhere
+[33m4e285a3[m More changes to Scheduler
+[33m4be4172[m Updated Scheduler
+[33mb382610[m Updates to Scheduler
+[33m1e41aa7[m Updated Scheduler & added mobile compatibility
+[33mf909200[m Updated Scheduler & UI Design
+[33m08ea054[m Add Icon & Fix Responsiveness
+[33m1d186a3[m updates to homepage
+[33me2887c9[m Update README.md
+[33mebd5b04[m Update README.md
+[33md02266a[m Updated Scheduler.tsx
+[33m4e231ec[m Improved All Pages & Components
+[33mef9dd01[m added vercel analytics and speed insights
+[33mb8977a8[m Delete app-scheduler-page.tsx
+[33m1652149[m fix for prod
+[33m7b9d6d3[m fixed for prod
+[33m0a11b6a[m Explore Page fixes and UI improvements
+[33m4c2a0cd[m Update page.tsx
+[33m4f07d4d[m explore page fixes
+[33m6c14a8b[m major overhaul of api
+[33m503e1db[m Initial commit from Create Next App
