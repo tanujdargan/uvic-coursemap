@@ -1,8 +1,38 @@
 // app/api/seat-capacity/route.ts
+//
+// GET /api/seat-capacity?term=X&crn=Y
+//   -> { term, crn, data: { Seats: {Capacity,Actual,Remaining},
+//                           Waitlist: {Capacity,Actual,Remaining} } }
+// Numbers (not strings). Backed by Banner's live getEnrollmentInfo fragment.
+// A tiny in-memory 30s cache absorbs the burst the explore page fires (one
+// request per section of the selected course).
+
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import axios from 'axios';
-import { load } from 'cheerio';
+import { getEnrollmentInfo, type EnrollmentInfo } from '@/lib/banner';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+const CACHE_TTL_MS = 30_000;
+
+interface CacheEntry {
+  expires: number;
+  data: EnrollmentInfo;
+}
+
+// Module-scoped cache (persists across requests within a warm server instance).
+const cache = new Map<string, CacheEntry>();
+// De-dupe concurrent identical lookups.
+const inflight = new Map<string, Promise<EnrollmentInfo>>();
+
+function getCached(key: string): EnrollmentInfo | null {
+  const entry = cache.get(key);
+  if (entry && entry.expires > Date.now()) return entry.data;
+  if (entry) cache.delete(key);
+  return null;
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,63 +40,45 @@ export async function GET(request: NextRequest) {
   const crn = searchParams.get('crn');
 
   if (!term || !crn) {
-    return NextResponse.json({ error: 'Missing term or crn parameter' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Missing term or crn parameter' },
+      { status: 400 }
+    );
   }
 
+  const key = `${term}:${crn}`;
+
   try {
-    const url = `https://www.uvic.ca/BAN1P/bwckschd.p_disp_detail_sched?term_in=${term}&crn_in=${crn}`;
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-      },
-    });
+    let data = getCached(key);
 
-    const htmlContent = response.data;
-    const $ = load(htmlContent);
-
-    // Find the 'Registration Availability' table
-    const regTable = $('table.datadisplaytable').filter(function (this: HTMLElement) {
-      return $(this).find('caption.captiontext').text().includes('Registration Availability');
-    }).first();
-
-    if (!regTable.length) {
-      return NextResponse.json({ error: 'Registration Availability table not found' }, { status: 404 });
+    if (!data) {
+      let promise = inflight.get(key);
+      if (!promise) {
+        promise = getEnrollmentInfo(term, crn);
+        inflight.set(key, promise);
+        promise
+          .then((result) => {
+            cache.set(key, { expires: Date.now() + CACHE_TTL_MS, data: result });
+          })
+          .catch(() => {
+            /* handled below */
+          })
+          .finally(() => {
+            inflight.delete(key);
+          });
+      }
+      data = await promise;
     }
 
-    const data: any = {
-      Seats: {},
-      Waitlist: {},
-    };
-
-    // Parse the rows
-    const rows = regTable.find('tr');
-    rows.each((index, element) => {
-      if (index === 0) return; // Skip header row
-      const headerCell = $(element).find('th.ddlabel').text().trim();
-      const cells = $(element).find('td.dddefault');
-      if (cells.length >= 3) {
-        const capacity = cells.eq(0).text().trim();
-        const actual = cells.eq(1).text().trim();
-        const remaining = cells.eq(2).text().trim();
-
-        if (headerCell === 'Seats') {
-          data.Seats = {
-            Capacity: capacity,
-            Actual: actual,
-            Remaining: remaining,
-          };
-        } else if (headerCell === 'Waitlist Seats') {
-          data.Waitlist = {
-            Capacity: capacity,
-            Actual: actual,
-            Remaining: remaining,
-          };
-        }
-      }
-    });
-    return NextResponse.json({ term, crn, data });
+    return NextResponse.json(
+      { term, crn, data },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
   } catch (error) {
     console.error('Error fetching seat capacity data:', error);
-    return NextResponse.json({ error: 'Failed to fetch seat capacity data' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch seat capacity data' },
+      { status: 502 }
+    );
   }
 }

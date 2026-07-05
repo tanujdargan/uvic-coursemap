@@ -3,10 +3,12 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Github, Menu, X, Sun, Moon } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+import { Github, Menu, X, Sun, Moon, GraduationCap } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import * as Switch from '@radix-ui/react-switch';
 
 interface TopBarProps {
   isMobile: boolean;
@@ -14,6 +16,11 @@ interface TopBarProps {
   setIsMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isTopBarVisible: boolean;
 }
+
+const navLinks = [
+  { href: '/explore', label: 'Explore Courses' },
+  { href: '/scheduler', label: 'Timetable' },
+];
 
 const TopBar: React.FC<TopBarProps> = ({
   isMobile,
@@ -23,121 +30,136 @@ const TopBar: React.FC<TopBarProps> = ({
 }) => {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   return (
-    <div
-      className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-surface-100 text-black dark:bg-surface-800 dark:text-white border-b border-surface-300`}
+    <header
+      className="fixed inset-x-0 top-0 z-50 h-16 border-b border-border/60 bg-background/70 text-foreground backdrop-blur-xl supports-[backdrop-filter]:bg-background/60"
       style={{
-        height: '64px',
         transform: isTopBarVisible ? 'translateY(0%)' : 'translateY(-100%)',
         transition: 'transform 0.3s ease-in-out',
       }}
     >
-      {/* Left Side - Logo */}
-      <Link href="/" className="text-xl font-bold ml-4">
-        CourseMap
-      </Link>
+      <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6">
+        {/* Left — Logo */}
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-lg font-bold tracking-tight"
+        >
+          <GraduationCap className="h-5 w-5 text-primary" />
+          <span>CourseMap</span>
+        </Link>
 
-      {/* Right Side - Theme Toggle and Navigation/Menu */}
-      <div className="flex items-center mr-4">
-        {/* Theme Toggle */}
-        {mounted && (
-          <div className="flex items-center mr-2">
-            <div className="flex items-center space-x-2">
-              <Sun className="h-5 w-5 text-yellow-500" />
-              <Switch.Root
+        {/* Right — Nav + theme toggle */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Theme Toggle */}
+          {mounted && (
+            <div className="mr-1 flex items-center gap-2">
+              <Sun className="h-4 w-4 text-muted-foreground" />
+              <Switch
                 checked={theme === 'dark'}
-                onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-                className="relative inline-flex items-center h-6 rounded-full w-11 bg-gray-300 dark:bg-gray-700 transition-colors duration-200 focus:outline-none"
-              >
-                <Switch.Thumb
-                  className="inline-block w-4 h-4 transform bg-white rounded-full shadow-lg transition-transform duration-200 ease-in-out translate-x-1 dark:translate-x-6"
-                />
-              </Switch.Root>
-              <Moon className="h-5 w-5 text-gray-700 dark:text-yellow-500" />
+                onCheckedChange={(checked) =>
+                  setTheme(checked ? 'dark' : 'light')
+                }
+                aria-label="Toggle dark mode"
+              />
+              <Moon className="h-4 w-4 text-muted-foreground" />
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Desktop Navigation Links */}
-        <div className="hidden md:flex items-center">
-          <Button asChild variant="ghost" className="text-lg font-bold">
-            <Link href="/explore">Explore Courses</Link>
-          </Button>
-          <Button asChild variant="ghost" className="text-lg font-bold">
-            <Link href="/scheduler">Timetable</Link>
-          </Button>
-          <Button asChild variant="ghost" size="icon">
-            <a
-              href="https://github.com/TanujDargan/uvic-coursemap"
-              target="_blank"
-              rel="noopener noreferrer"
+          {/* Desktop Nav */}
+          <nav className="hidden items-center gap-1 md:flex">
+            {navLinks.map((link) => {
+              const active = pathname === link.href;
+              return (
+                <Button
+                  key={link.href}
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    'font-medium',
+                    active && 'bg-accent text-accent-foreground'
+                  )}
+                >
+                  <Link href={link.href}>{link.label}</Link>
+                </Button>
+              );
+            })}
+            <Button asChild variant="ghost" size="icon" aria-label="GitHub">
+              <a
+                href="https://github.com/TanujDargan/uvic-coursemap"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Github className="h-5 w-5" />
+              </a>
+            </Button>
+          </nav>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Toggle menu"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              <Github className="h-5 w-5 mr-2" />
-            </a>
-          </Button>
-        </div>
-
-        {/* Mobile Menu Button */}
-        <div className="md:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setIsMenuOpen(!isMenuOpen);
-            }}
-          >
-            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
+              {isMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Mobile Menu */}
       {isMobile && (
         <div
-          className={`absolute top-full left-0 w-full bg-surface-100 text-black dark:bg-surface-800 dark:text-white flex flex-col items-center space-y-2 overflow-hidden transition-transform duration-300 ease-in-out ${
+          className={cn(
+            'absolute left-0 top-full w-full overflow-hidden border-b border-border/60 bg-background/95 backdrop-blur-xl transition-all duration-300 ease-in-out',
             isMenuOpen
-              ? 'transform translate-y-0 opacity-100 pointer-events-auto'
-              : 'transform -translate-y-full opacity-0 pointer-events-none'
-          }`}
+              ? 'pointer-events-auto translate-y-0 opacity-100'
+              : 'pointer-events-none -translate-y-4 opacity-0'
+          )}
         >
-          <Button
-            asChild
-            variant="ghost"
-            className="text-lg font-bold w-full text-center"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            <Link href="/explore">Explore Courses</Link>
-          </Button>
-          <Button
-            asChild
-            variant="ghost"
-            className="text-lg font-bold w-full text-center"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            <Link href="/scheduler">Timetable</Link>
-          </Button>
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            <a
-              href="https://github.com/TanujDargan/uvic-coursemap"
-              target="_blank"
-              rel="noopener noreferrer"
+          <div className="flex flex-col p-2">
+            {navLinks.map((link) => (
+              <Button
+                key={link.href}
+                asChild
+                variant="ghost"
+                className="w-full justify-start font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Link href={link.href}>{link.label}</Link>
+              </Button>
+            ))}
+            <Button
+              asChild
+              variant="ghost"
+              className="w-full justify-start font-medium"
+              onClick={() => setIsMenuOpen(false)}
             >
-              <Github className="h-5 w-5" />
-            </a>
-          </Button>
+              <a
+                href="https://github.com/TanujDargan/uvic-coursemap"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Github className="mr-2 h-5 w-5" />
+                GitHub
+              </a>
+            </Button>
+          </div>
         </div>
       )}
-    </div>
+    </header>
   );
 };
 

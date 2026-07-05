@@ -4,11 +4,15 @@ import { parseTime, dayInitialsToNumbers } from './dateUtils';
 export function groupSectionsIntoCourses(sections: Section[]): Course[] {
   const coursesMap: { [key: string]: Course } = {};
   sections.forEach((section) => {
-    const key = `${section.subject}-${section.course_number}`;
+    // Prefer the alphanumeric course_code so "370A" and "370G" stay distinct;
+    // fall back to the numeric course_number for older data lacking course_code.
+    const courseCode = section.course_code || String(section.course_number);
+    const key = `${section.subject}-${courseCode}`;
     if (!coursesMap[key]) {
       coursesMap[key] = {
         subject: section.subject,
         course_number: section.course_number,
+        course_code: courseCode,
         course_name: section.course_name,
         sections: [section],
       };
@@ -50,14 +54,25 @@ export function getSectionTimes(section: Section) {
   }
 
   const daysArray = section.days.split('');
-  const timeRange = section.time.split('-').map((t) => t.trim());
+  // Normalize all dash variants (hyphen, en dash, em dash) and surrounding
+  // whitespace so both freshly-fetched and older saved data parse cleanly.
+  const timeRange = section.time
+    .split(/\s*[-–—]\s*/)
+    .map((t) => t.trim())
+    .filter(Boolean);
 
   if (timeRange.length !== 2) {
     return [];
   }
 
-  const startTime = parseTime(timeRange[0]);
-  const endTime = parseTime(timeRange[1]);
+  let startTime;
+  let endTime;
+  try {
+    startTime = parseTime(timeRange[0]);
+    endTime = parseTime(timeRange[1]);
+  } catch {
+    return [];
+  }
 
   return daysArray
     .map((dayInitial) => {

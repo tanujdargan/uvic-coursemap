@@ -114,7 +114,7 @@ export const generateCalendarEvents = (
 
       return {
         id: section.crn,
-        title: `${section.subject} ${section.course_number} - ${section.schedule_type}`,
+        title: `${section.subject} ${section.course_code || section.course_number} - ${section.schedule_type}`,
         start: startDate,
         end: endDate,
         color: eventColors[section.crn] || '#3c4043', // Default color

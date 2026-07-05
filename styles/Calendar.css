@@ -254,9 +254,14 @@
 /* Highlight today */
 .custom-header-day-name.today,
 .custom-header-day-number.today {
-  color: var(--color-primary-100);
+  color: hsl(var(--primary));
 }
 .custom-header-day-number.today {
-  background-color: var(--color-primary-100);
-  color: #ffffff;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+/* Keep today's tint on the day column only — rbc's stock pale-blue header bg is illegible in dark mode */
+.rbc-header.rbc-today {
+  background-color: transparent;
 }

@@ -4,7 +4,36 @@
 
 import React, { useState, useEffect } from 'react';
 import { Section, Course, CourseDetails } from '../utils/interfaces';
-import { IProfessorRating } from '@/utils/rateMyProfessor'; // Adjust the path as necessary
+import { IProfessorRating } from '@/utils/rateMyProfessor';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  BookOpen,
+  Calendar as CalendarIcon,
+  ChevronDown,
+  Clock,
+  Download,
+  ExternalLink,
+  GraduationCap,
+  Plus,
+  Save,
+  Star,
+  Trash2,
+  Users,
+} from 'lucide-react';
 
 interface RightSidebarProps {
   selectedCourse: Course | null;
@@ -13,7 +42,7 @@ interface RightSidebarProps {
   handleSectionSelection: (type: string, crnValue: string) => void;
   handleExportICS: () => void;
   handleSaveTimetable: (timetableName: string) => void;
-  handleDeleteTimetable: (timetableName: string) => void; // Updated to accept timetableName
+  handleDeleteTimetable: (timetableName: string) => void;
   timetables: any[];
   currentTimetableName: string;
   setCurrentTimetableName: (name: string) => void;
@@ -23,8 +52,37 @@ interface RightSidebarProps {
   seatData: any;
   isFetchingSeatData: boolean;
   seatDataError: string | null;
-  showAllLabs: boolean; // Added new prop
-  setShowAllLabs: React.Dispatch<React.SetStateAction<boolean>>; // Added new prop
+  showAllLabs: boolean;
+  setShowAllLabs: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const SECTION_TYPES = ['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'];
+
+/** Color-coded badge for a remaining-count value. */
+function AvailabilityBadge({
+  remaining,
+  label,
+}: {
+  remaining: number;
+  label: string;
+}) {
+  const tone =
+    remaining <= 0
+      ? 'bg-destructive/15 text-destructive border-destructive/30'
+      : remaining <= 10
+      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+      : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold',
+        tone
+      )}
+    >
+      {remaining <= 0 ? 'Full' : `${remaining} ${label}`}
+    </span>
+  );
 }
 
 const RightSidebar: React.FC<RightSidebarProps> = ({
@@ -44,12 +102,13 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   seatData,
   isFetchingSeatData,
   seatDataError,
-  showAllLabs, // Added new prop
-  setShowAllLabs, // Added new prop
+  showAllLabs,
+  setShowAllLabs,
 }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [timetableNameInput, setTimetableNameInput] = useState(currentTimetableName);
   const [professorRating, setProfessorRating] = useState<IProfessorRating | null>(null);
+  const [ratingLoading, setRatingLoading] = useState(false);
   const [courseDetails, setCourseDetails] = useState<CourseDetails | null>(null);
 
   useEffect(() => {
@@ -57,19 +116,22 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   }, [currentTimetableName]);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchProfessorRating = async (instructorName: string) => {
       if (!instructorName || instructorName.trim() === '') {
         setProfessorRating(null);
         return;
       }
-
+      setRatingLoading(true);
       try {
-        const response = await fetch(`/api/ratings/${encodeURIComponent(instructorName)}`);
+        const response = await fetch(
+          `/api/ratings/${encodeURIComponent(instructorName)}`
+        );
+        if (cancelled) return;
         if (response.ok) {
           const data: IProfessorRating = await response.json();
           setProfessorRating(data);
         } else {
-          console.error(`Failed to fetch rating for ${instructorName}: ${response.statusText}`);
           setProfessorRating({
             avgRating: -1,
             avgDifficulty: -1,
@@ -81,7 +143,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
           });
         }
       } catch (error) {
-        console.error('Error fetching professor rating:', error);
+        if (cancelled) return;
         setProfessorRating({
           avgRating: -1,
           avgDifficulty: -1,
@@ -91,312 +153,471 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
           department: '',
           link: '',
         });
+      } finally {
+        if (!cancelled) setRatingLoading(false);
       }
     };
 
     if (selectedCourse && selectedCourse.sections.length > 0) {
-      const instructorName = selectedCourse.sections[0].instructor;
-      fetchProfessorRating(instructorName);
+      fetchProfessorRating(selectedCourse.sections[0].instructor);
     } else {
       setProfessorRating(null);
     }
+    return () => {
+      cancelled = true;
+    };
   }, [selectedCourse]);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchCourseDetails = async (courseId: string) => {
       try {
-        const response = await fetch(`/api/course-details/${encodeURIComponent(courseId)}`);
+        const response = await fetch(
+          `/api/course-details/${encodeURIComponent(courseId)}`
+        );
+        if (cancelled) return;
         if (response.ok) {
           const data: CourseDetails = await response.json();
           setCourseDetails(data);
         } else {
-          console.error(`Failed to fetch course details for ${courseId}: ${response.statusText}`);
+          // Degrade gracefully (e.g. 404) — just hide the description panel.
           setCourseDetails(null);
         }
       } catch (error) {
-        console.error('Error fetching course details:', error);
-        setCourseDetails(null);
+        if (!cancelled) setCourseDetails(null);
       }
     };
 
     if (selectedCourse) {
-      const courseId = `${selectedCourse.subject}${selectedCourse.course_number}`;
-      fetchCourseDetails(courseId);
+      fetchCourseDetails(`${selectedCourse.subject}${selectedCourse.course_code}`);
     } else {
       setCourseDetails(null);
     }
+    return () => {
+      cancelled = true;
+    };
   }, [selectedCourse]);
 
+  // ---- Empty state -------------------------------------------------------
+  if (!selectedCourse) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-3 border-l border-border bg-card px-6 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+          <BookOpen className="h-6 w-6 text-muted-foreground" />
+        </div>
+        <p className="text-sm font-medium text-foreground">No course selected</p>
+        <p className="max-w-[16rem] text-xs text-muted-foreground">
+          Pick a course from the catalog on the left to view its sections, seat
+          availability, and professor ratings.
+        </p>
+      </div>
+    );
+  }
+
+  const firstSection = selectedCourse.sections[0];
+  const instructor =
+    firstSection?.instructor && firstSection.instructor.trim() !== ''
+      ? firstSection.instructor
+      : 'TBA';
+
+  const hasRmp = professorRating && professorRating.avgRating !== -1;
+
   return (
-    <div className="bg-surface-100 dark:bg-surface-800 h-full w-full p-4 overflow-y-auto border-l border-surface-300">
-      {selectedCourse ? (
-        <>
-          <h2 className="text-xl font-bold mb-2 text-black dark:text-white">
-            {selectedCourse.subject} {selectedCourse.course_number}
-          </h2>
-          <h3 className="text-lg font-semibold mb-2 text-black dark:text-white">
-            {selectedCourse.course_name}
-          </h3>
-
-          {/* View Details Toggle */}
-          <button
-            className="text-sm text-blue-500 hover:underline mb-2"
-            onClick={() => setShowDetails(!showDetails)}
-          >
-            {showDetails ? 'Hide Details' : 'View Details'}
-          </button>
-
-          {/* Details Section */}
-          <div
-            className={`overflow-hidden transition-all duration-300 ${
-              showDetails ? 'max-h-full' : 'max-h-0'
-            }`}
-          >
-            {/* Course Details */}
-            {selectedCourse.sections.length > 0 && (
-              <div className="mb-4">
-                <p>
-                  <strong>Instructor:</strong> {selectedCourse.sections[0].instructor}
-                </p>
-                {professorRating && (
-                  <>
-                    <p>
-                      <strong>Rate My Prof Rating:</strong>{' '}
-                      {professorRating.avgRating !== -1 ? (
-                        <>
-                          {professorRating.avgRating} / 5.0
-                          {' ('}
-                          {professorRating.numRatings} ratings{') '}
-                          <a
-                            href={professorRating.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 underline"
-                          >
-                            View Profile
-                          </a>
-                        </>
-                      ) : (
-                        'N/A'
-                      )}
-                    </p>
-                    <p>
-                      <strong>Level of Difficulty:</strong>{' '}
-                      {professorRating.avgDifficulty !== -1 ? (
-                        `${professorRating.avgDifficulty} / 5.0`
-                      ) : (
-                        'N/A'
-                      )}
-                    </p>
-                    <p>
-                      <strong>Would Take Again:</strong>{' '}
-                      {professorRating.wouldTakeAgainPercent !== -1 ? (
-                        `${professorRating.wouldTakeAgainPercent.toFixed(2)}%`
-                      ) : (
-                        'N/A'
-                      )}
-                    </p>
-                  </>
-                )}
-                <p>
-                  <strong>Instructional Method:</strong>{' '}
-                  {selectedCourse.sections[0].instructional_method}
-                </p>
-                <p>
-                  <strong>Units:</strong> {selectedCourse.sections[0].units}
-                </p>
-                <p>
-                  <strong>CRN:</strong> {selectedCourse.sections[0].crn}
-                </p>
-                {selectedCourse.sections[0].additional_information && (
-                  <p>
-                    <strong>Additional Information:</strong>{' '}
-                    {selectedCourse.sections[0].additional_information}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Additional Course Details */}
-            {courseDetails ? (
-              <div className="mb-4">
-                {courseDetails.description && (
-                  <p className="mb-2">
-                    <strong>Description:</strong> {courseDetails.description}
-                  </p>
-                )}
-                {courseDetails.prerequisites && (
-                  <p className="mb-2">
-                    <strong>Prerequisites:</strong> {courseDetails.prerequisites}
-                  </p>
-                )}
-                {courseDetails.recommendations && (
-                  <p className="mb-2">
-                    <strong>Recommendations:</strong> {courseDetails.recommendations}
-                  </p>
-                )}
-                {courseDetails.notes && (
-                  <p>
-                    <strong>Notes:</strong> {courseDetails.notes}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p>No additional details available.</p>
+    <div className="flex h-full w-full flex-col overflow-y-auto border-l border-border bg-card">
+      <div className="space-y-5 p-4">
+        {/* Course header */}
+        <div className="space-y-1.5">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-bold leading-tight text-foreground">
+                {selectedCourse.subject} {selectedCourse.course_code}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {selectedCourse.course_name}
+              </p>
+            </div>
+            {firstSection && (
+              <Badge variant="secondary" className="shrink-0">
+                {firstSection.units} {firstSection.units === 1 ? 'unit' : 'units'}
+              </Badge>
             )}
           </div>
 
-          {/* Sections Selection */}
-          {['Lecture', 'Lab', 'Tutorial', 'Seminar', 'Other'].map((type) => {
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            <Badge variant="outline" className="gap-1 font-normal">
+              <GraduationCap className="h-3 w-3" /> {instructor}
+            </Badge>
+            {firstSection?.instructional_method && (
+              <Badge variant="outline" className="font-normal">
+                {firstSection.instructional_method}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Professor rating */}
+        {ratingLoading ? (
+          <Skeleton className="h-16 w-full rounded-lg" />
+        ) : hasRmp ? (
+          <div className="rounded-lg border border-border bg-background/50 p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                RateMyProfessor
+              </span>
+              {professorRating?.link && (
+                <a
+                  href={professorRating.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  Profile <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <div className="flex items-center justify-center gap-1 text-base font-bold text-foreground">
+                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                  {typeof professorRating?.avgRating === 'number' &&
+                  professorRating.avgRating >= 0
+                    ? professorRating.avgRating.toFixed(1)
+                    : 'N/A'}
+                </div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Rating
+                </div>
+              </div>
+              <div>
+                <div className="text-base font-bold text-foreground">
+                  {typeof professorRating?.avgDifficulty === 'number' &&
+                  professorRating.avgDifficulty >= 0
+                    ? professorRating.avgDifficulty.toFixed(1)
+                    : 'N/A'}
+                </div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Difficulty
+                </div>
+              </div>
+              <div>
+                <div className="text-base font-bold text-foreground">
+                  {typeof professorRating?.wouldTakeAgainPercent === 'number' &&
+                  professorRating.wouldTakeAgainPercent >= 0
+                    ? `${professorRating.wouldTakeAgainPercent.toFixed(0)}%`
+                    : 'N/A'}
+                </div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Retake
+                </div>
+              </div>
+            </div>
+            <p className="mt-2 text-center text-[10px] text-muted-foreground">
+              Based on {professorRating?.numRatings} ratings
+            </p>
+          </div>
+        ) : null}
+
+        {/* Details toggle */}
+        <div>
+          <button
+            className="flex w-full items-center justify-between rounded-md py-1 text-sm font-medium text-foreground transition-colors hover:text-primary"
+            onClick={() => setShowDetails((v) => !v)}
+            aria-expanded={showDetails}
+          >
+            <span>Course details</span>
+            <ChevronDown
+              className={cn(
+                'h-4 w-4 transition-transform',
+                showDetails && 'rotate-180'
+              )}
+            />
+          </button>
+          {showDetails && (
+            <div className="mt-2 space-y-2 rounded-lg border border-border bg-background/50 p-3 text-sm">
+              <DetailRow label="CRN" value={firstSection?.crn} />
+              <DetailRow label="Units" value={firstSection?.units} />
+              <DetailRow
+                label="Method"
+                value={firstSection?.instructional_method}
+              />
+              {firstSection?.additional_information && (
+                <DetailRow
+                  label="Info"
+                  value={firstSection.additional_information}
+                />
+              )}
+              {courseDetails?.description && (
+                <div className="pt-1">
+                  <p className="text-xs font-semibold text-muted-foreground">
+                    Description
+                  </p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-foreground/90">
+                    {courseDetails.description}
+                  </p>
+                </div>
+              )}
+              {courseDetails?.prerequisites && (
+                <DetailRow
+                  label="Prerequisites"
+                  value={courseDetails.prerequisites}
+                />
+              )}
+              {courseDetails?.recommendations && (
+                <DetailRow
+                  label="Recommendations"
+                  value={courseDetails.recommendations}
+                />
+              )}
+              {courseDetails?.notes && (
+                <DetailRow label="Notes" value={courseDetails.notes} />
+              )}
+            </div>
+          )}
+        </div>
+
+        <Separator />
+
+        {/* Section selection */}
+        <div className="space-y-4">
+          {SECTION_TYPES.map((type) => {
             const sectionsOfType = selectedCourse.sections
               .filter(
                 (section) =>
-                  section.schedule_type === type && section.term === parseInt(selectedTerm)
+                  section.schedule_type === type &&
+                  section.term === parseInt(selectedTerm)
               )
               .sort((a, b) => a.section.localeCompare(b.section));
 
-            if (sectionsOfType.length === 0) {
-              return null;
-            }
+            if (sectionsOfType.length === 0) return null;
+
             return (
-              <div key={type} className="mb-4">
-                <label className="block text-sm font-medium mb-1">{type}:</label>
-                <div className="space-y-2">
-                  {sectionsOfType.map((section) => (
-                    <label key={section.crn} className="flex items-center">
-                      <input
-                        type="radio"
-                        name={`${type}-section`}
-                        value={section.crn}
-                        checked={selectedSectionsByType[type]?.crn === section.crn}
-                        onChange={(e) => handleSectionSelection(type, e.target.value)}
-                      />
-                      <span className="ml-2">
-                        Section {section.section} ({section.days} {section.time})
-                      </span>
-                    </label>
-                  ))}
+              <div key={type} className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {type}
+                </p>
+                <div
+                  role="radiogroup"
+                  aria-label={`${type} sections`}
+                  className="space-y-1.5"
+                >
+                  {sectionsOfType.map((section) => {
+                    const selected =
+                      selectedSectionsByType[type]?.crn === section.crn;
+                    return (
+                      <button
+                        key={section.crn}
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() =>
+                          handleSectionSelection(type, section.crn.toString())
+                        }
+                        className={cn(
+                          'flex w-full items-start gap-2.5 rounded-lg border p-2.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          selected
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border bg-background/40 hover:border-border hover:bg-accent'
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
+                            selected
+                              ? 'border-primary'
+                              : 'border-muted-foreground/40'
+                          )}
+                        >
+                          {selected && (
+                            <span className="h-2 w-2 rounded-full bg-primary" />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center justify-between gap-2">
+                            <span className="font-medium text-foreground">
+                              Section {section.section}
+                            </span>
+                            <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+                              {section.crn}
+                            </span>
+                          </span>
+                          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                            {section.days && (
+                              <span className="inline-flex items-center gap-1">
+                                <CalendarIcon className="h-3 w-3" />
+                                {section.days}
+                              </span>
+                            )}
+                            {section.time && (
+                              <span className="inline-flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {section.time}
+                              </span>
+                            )}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
 
-          {/* Toggle to show all lab and tutorial sections */}
-          <div className="mb-4">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={showAllLabs}
-                onChange={(e) => setShowAllLabs(e.target.checked)}
-              />
-              <span className="ml-2">Show All Lab/Tutorial Sections on Timetable</span>
-            </label>
+          {/* Show all labs toggle */}
+          <div className="flex items-center justify-between rounded-lg border border-border bg-background/40 p-3">
+            <Label
+              htmlFor="show-all-labs"
+              className="cursor-pointer text-sm font-normal leading-snug"
+            >
+              Preview all Lab / Tutorial sections
+            </Label>
+            <Switch
+              id="show-all-labs"
+              checked={showAllLabs}
+              onCheckedChange={(checked) => setShowAllLabs(checked)}
+            />
           </div>
+        </div>
 
-          {/* Seat Information */}
-          <div className="mt-4 mb-6">
-            <h3 className="text-md font-semibold mb-2">Seat Availability</h3>
-            {isFetchingSeatData && <p>Loading seat information...</p>}
-            {seatDataError && <p className="text-red-500">{seatDataError}</p>}
-            {seatData && (
-              <div>
-                <p>
-                  <strong>Seats:</strong> {seatData.data.Seats.Actual} /{' '}
-                  {seatData.data.Seats.Capacity} ({seatData.data.Seats.Remaining} remaining)
+        <Separator />
+
+        {/* Seat availability */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">
+              Seat availability
+            </h3>
+          </div>
+          {isFetchingSeatData ? (
+            <Skeleton className="h-16 w-full rounded-lg" />
+          ) : seatDataError ? (
+            <p className="text-xs text-destructive">{seatDataError}</p>
+          ) : seatData?.data ? (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-lg border border-border bg-background/50 p-2.5">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Seats
                 </p>
-                <p>
-                  <strong>Waitlist:</strong> {seatData.data.Waitlist.Actual} /{' '}
-                  {seatData.data.Waitlist.Capacity} ({seatData.data.Waitlist.Remaining} remaining)
+                <p className="text-sm font-semibold text-foreground">
+                  {seatData.data.Seats.Actual} / {seatData.data.Seats.Capacity}
                 </p>
+                <div className="mt-1">
+                  <AvailabilityBadge
+                    remaining={seatData.data.Seats.Remaining}
+                    label="open"
+                  />
+                </div>
               </div>
-            )}
-          </div>
+              <div className="rounded-lg border border-border bg-background/50 p-2.5">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Waitlist
+                </p>
+                <p className="text-sm font-semibold text-foreground">
+                  {seatData.data.Waitlist.Actual} /{' '}
+                  {seatData.data.Waitlist.Capacity}
+                </p>
+                <div className="mt-1">
+                  <AvailabilityBadge
+                    remaining={seatData.data.Waitlist.Remaining}
+                    label="open"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Select a section to load live seat data.
+            </p>
+          )}
+        </div>
 
-          {/* Timetable Name Input */}
-          <div className="timetable-name-container" style={{ paddingBottom: '10px' }}>
-            <label htmlFor="timetable-name">Timetable Name:</label>
-            <div style={{ paddingBottom: '4px' }}></div>
-            <input
+        <Separator />
+
+        {/* Timetable management */}
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="timetable-name">Timetable name</Label>
+            <Input
               id="timetable-name"
-              type="text"
               value={timetableNameInput}
               onChange={(e) => setTimetableNameInput(e.target.value)}
-              className="timetable-name-input"
-              style={{
-                backgroundColor: 'var(--surface-300)',
-                border: 'none',
-                color: 'inherit',
-                font: 'inherit',
-                margin: '0',
-                padding: '2px',
-                width: '100%',
-                borderRadius: '4px',
-              }}
+              placeholder="My Timetable"
             />
           </div>
 
-          {/* Save Timetable Button */}
-          <button
-            className="w-full bg-green-600 hover:bg-green-500 text-white py-2 px-4 rounded"
+          <Button
+            className="w-full"
             onClick={() => handleSaveTimetable(timetableNameInput)}
           >
-            Save Timetable
-          </button>
+            <Save className="mr-2 h-4 w-4" /> Save timetable
+          </Button>
 
-          {/* Timetables Dropdown */}
-          <div className="mt-2">
-            <label className="block text-sm font-medium mb-1">Saved Timetables:</label>
-            <select
-              className="w-full bg-surface-300 border-surface-400 text--surface-text placeholder-surface-500 rounded-md p-2"
-              value={currentTimetableName}
-              onChange={(e) => loadTimetable(e.target.value)}
-            >
-              {timetables.map((tt) => (
-                <option key={tt.name} value={tt.name}>
-                  {tt.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* New Timetable Button */}
-          <button
-            className="mt-2 w-full bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded"
-            onClick={createNewTimetable}
-          >
-            New Timetable
-          </button>
-
-          {/* Delete Timetable Button */}
-          <button
-            className="mt-2 w-full bg-red-600 hover:bg-red-500 text-white py-2 px-4 rounded"
-            onClick={() => handleDeleteTimetable(timetableNameInput)}
-          >
-            Delete Timetable
-          </button>
-
-          {/* Delete Course Button */}
-          {selectedCourse && (
-            <button
-              className="mt-2 w-full bg-red-600 hover:bg-red-500 text-white py-2 px-4 rounded"
-              onClick={() => handleDeleteCourse(selectedCourse)}
-            >
-              Delete Course
-            </button>
+          {timetables.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Saved timetables</Label>
+              <Select value={currentTimetableName} onValueChange={loadTimetable}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Load a timetable" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timetables.map((tt) => (
+                    <SelectItem key={tt.name} value={tt.name}>
+                      {tt.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
 
-          {/* Export to ICS Button */}
-          <button
-            className="mt-2 w-full export-button hover:exbhighlight text-white py-2 px-4 rounded"
-            onClick={handleExportICS}
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="secondary" onClick={createNewTimetable}>
+              <Plus className="mr-1.5 h-4 w-4" /> New
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleDeleteTimetable(timetableNameInput)}
+            >
+              <Trash2 className="mr-1.5 h-4 w-4" /> Delete
+            </Button>
+          </div>
+
+          <Button variant="outline" className="w-full" onClick={handleExportICS}>
+            <Download className="mr-2 h-4 w-4" /> Export to .ics
+          </Button>
+
+          <Separator />
+
+          <Button
+            variant="destructive"
+            className="w-full"
+            onClick={() => handleDeleteCourse(selectedCourse)}
           >
-            Export to .ics
-          </button>
-        </>
-      ) : (
-        <p className="text-center text-black dark:text-white">Select a course to view sections</p>
-      )}
+            <Trash2 className="mr-2 h-4 w-4" /> Remove {selectedCourse.subject}{' '}
+            {selectedCourse.course_code}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
+
+function DetailRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  if (value === undefined || value === null || value === '') return null;
+  return (
+    <div className="flex gap-2 text-xs">
+      <span className="shrink-0 font-semibold text-muted-foreground">
+        {label}:
+      </span>
+      <span className="text-foreground/90">{value}</span>
+    </div>
+  );
+}
+
 export default RightSidebar;

@@ -11,17 +11,16 @@ const CustomHeader: React.FC<HeaderProps> = ({ date, localizer }) => {
 
   const isToday = isSameDay(date, new Date());
 
+  // rbc already wraps headers in a <button>; render a plain div to avoid nested buttons (hydration error)
   return (
-    <button type="button" className="rbc-button-link custom-header-button">
-      <div className="rbc-header custom-header-content">
-        <span className={`custom-header-day-name ${isToday ? 'today' : ''}`}>
-          {dayName}
-        </span>
-        <span className={`custom-header-day-number ${isToday ? 'today' : ''}`}>
-          {dayNumber}
-        </span>
-      </div>
-    </button>
+    <div className="custom-header-content">
+      <span className={`custom-header-day-name ${isToday ? 'today' : ''}`}>
+        {dayName}
+      </span>
+      <span className={`custom-header-day-number ${isToday ? 'today' : ''}`}>
+        {dayNumber}
+      </span>
+    </div>
   );
 };
 

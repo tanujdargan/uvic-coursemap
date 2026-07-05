@@ -5,6 +5,10 @@ export interface Section {
   subject: string;
   course_name: string;
   course_number: number;
+  // Raw Banner course number, preserving any letter suffix (e.g. "370A",
+  // "499B"). Equals String(course_number) for plain numeric courses. Used as
+  // the canonical course-identity key; course_number is kept for numeric sort.
+  course_code: string;
   crn: number;
   section: string;
   frequency: string;
@@ -22,6 +26,9 @@ export interface Section {
 export interface Course {
   subject: string;
   course_number: number;
+  // Raw Banner course number preserving letter suffixes (e.g. "370A"). This is
+  // the identity key that distinguishes AHVS 370A from AHVS 370G.
+  course_code: string;
   course_name: string;
   sections: Section[];
 }

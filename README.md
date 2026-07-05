@@ -4,8 +4,6 @@ UVic CourseMap is a tool designed to help students at the University of Victoria
 
 **Note:** This project is not affiliated with the University of Victoria (UVic) in any way. It is a personal project to assist other UVic students.
 
-### Update: Seat Availability Data is broken, this is likely not going to be fixed as UVIC has updated BAN1P or banner to now only show data when authenticated via netlink. This also means that this project will no longer be updated for any data beyond the Winter 2025 semester. (Unless I can find a way to get around this)
-
 ## Live Website
 Check out the live version of the project [here](https://uvic-coursemap.vercel.app).
 
@@ -16,19 +14,38 @@ Check out the live version of the project [here](https://uvic-coursemap.vercel.a
 
 ## API Reference
 
-Since accessing UVic's API is not a feasible approach, a data scraper was built to obtain all information needed.
+CourseMap reads directly from UVic's **Banner 9 Student Registration Self-Service (SSB)** JSON API
+(`https://banner.uvic.ca/StudentRegistrationSsb/ssb`). No separate scraper is required — the app's API
+routes talk to Banner 9 and to a MongoDB cache.
 
-The data scraper for this project is maintained under a separate repository:  
-[Scraper Repository](https://github.com/tanujdargan/scraper-uvic-data)
+- `GET /api/terms` — list of available terms.
+- `GET /api/courses?term=<code>` — all sections for a term (served from MongoDB, with a live Banner 9 fallback).
+- `GET /api/seat-capacity?term=<code>&crn=<crn>` — live seat + waitlist counts for a section.
+- `GET /api/course-details/[courseId]` — calendar description / prerequisites for a course.
+- `GET /api/ratings/[professorName]` — RateMyProfessors data for an instructor.
 
-However, CourseMap uses MongoDB on the backend to store all its scraped data. API routes for this can be found under `app/api/courses/routes.ts`.
+### Storage: MongoDB
 
-For additional course information the route is `app/api/seat-capacity`
+Course data is cached in **MongoDB**, in the `Course-Data` database's `sections` collection. To populate
+the cache for a term, run the Banner 9 sync script:
 
-#### Seat Capacity Data
-Since saving this data to our collection on MongoDB is not feasible, we can generate requests according to courses and then parse html from BAN1P. CourseMap is doing this under the hood using cheerio.
+```bash
+npm run sync -- --term 202609
+```
 
-`https://www.uvic.ca/BAN1P/bwckschd.p_disp_detail_sched?term_in=<termvalue>&crn_in=<crn>`
+The sync script requires a **`MONGODB_URI`** environment variable in `.env.local`. It connects, ensures the
+required indexes, fetches the full Banner catalog (enriching instructors), and upserts each section keyed on
+`{ term, crn }`. The script fails fast with a clear message if `MONGODB_URI` is missing.
+
+Without MongoDB configured, the site still works: `/api/courses` and `/api/course-details` transparently fall
+back to **live Banner 9 data**. In that mode instructor names are unavailable (rendered as TBA), since the
+live Banner search results do not include faculty.
+
+### Seat Capacity Data
+
+Seat availability is **fixed** and live again. It is fetched per-CRN from the Banner 9 SSB endpoint
+(`/searchResults/getEnrollmentInfo`), which returns current enrolment and waitlist numbers without
+authentication — no more scraping `BAN1P` HTML.
 
 ## Appendix
 
@@ -86,4 +103,4 @@ Start the development server
 
 ```bash
 npm run dev
-```****
+```

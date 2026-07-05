@@ -3,6 +3,14 @@ import { useState, useEffect } from 'react';
 import { Course, Section } from '@/utils/interfaces';
 import { toast } from 'sonner';
 
+interface Timetable {
+  name: string;
+  crns: number[];
+  colors: { [crn: number]: string };
+  assignedColors: { [color: string]: string };
+  timestamp: string;
+}
+
 export function useTimetable(groupedCourses: Course[]) {
   const [selectedSections, setSelectedSections] = useState<Section[]>([]);
   const [selectedSectionsByType, setSelectedSectionsByType] = useState<{
@@ -10,9 +18,10 @@ export function useTimetable(groupedCourses: Course[]) {
   }>({});
   const [eventColors, setEventColors] = useState<{ [crn: number]: string }>({});
   const [assignedColors, setAssignedColors] = useState<{ [color: string]: string }>({});
-  const [timetables, setTimetables] = useState<any[]>([]);
+  const [timetables, setTimetables] = useState<Timetable[]>([]);
   const [currentTimetableName, setCurrentTimetableName] = useState<string>('My Timetable');
   const [isTimetableLoaded, setIsTimetableLoaded] = useState<boolean>(false);
+  const [hasAutoLoaded, setHasAutoLoaded] = useState<boolean>(false);
 
   const eventColorPalette = [
     '#59a8d0', // Blue
@@ -25,31 +34,71 @@ export function useTimetable(groupedCourses: Course[]) {
     '#ffd366', // Yellow
   ];
 
+  // Read the saved timetables out of localStorage once on mount.
   useEffect(() => {
-    fetchTimetables();
-  }, [groupedCourses]);
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem('timetables');
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        setTimetables(parsed);
+        const latest = parsed[parsed.length - 1];
+        if (latest?.name) setCurrentTimetableName(latest.name);
+      }
+    } catch (error) {
+      console.error('Failed to parse saved timetables:', error);
+    }
+  }, []);
 
-  const findSectionByCrn = (crn: number) => {
+  // Once both the saved timetables and the catalog are available, restore the
+  // most-recent timetable exactly once. (Doing this here — rather than inside
+  // the mount effect — guarantees the sections can actually be resolved.)
+  useEffect(() => {
+    if (hasAutoLoaded) return;
+    if (timetables.length === 0 || groupedCourses.length === 0) return;
+    const latest = timetables[timetables.length - 1];
+    if (latest) {
+      applyTimetable(latest, { silent: true });
+      setHasAutoLoaded(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timetables, groupedCourses, hasAutoLoaded]);
+
+  const findSectionByCrn = (crn: number): Section | null => {
     for (const course of groupedCourses) {
       const section = course.sections.find((sec) => sec.crn === crn);
-      if (section) {
-        return section;
-      }
+      if (section) return section;
     }
     return null;
   };
 
-  const fetchTimetables = () => {
-    if (typeof window !== 'undefined') {
-      const storedTimetables = localStorage.getItem('timetables');
-      if (storedTimetables) {
-        const parsedTimetables = JSON.parse(storedTimetables);
-        setTimetables(parsedTimetables);
-        const latestTimetable = parsedTimetables[parsedTimetables.length - 1];
-        if (latestTimetable) {
-          loadTimetable(latestTimetable.name);
-        }
-      }
+  const applyTimetable = (
+    timetable: Timetable,
+    opts: { silent?: boolean } = {}
+  ) => {
+    setCurrentTimetableName(timetable.name);
+    const { crns, colors, assignedColors: savedAssignedColors } = timetable;
+
+    const sections: Section[] = [];
+    for (const crn of crns || []) {
+      const section = findSectionByCrn(crn);
+      if (section) sections.push(section);
+    }
+    setSelectedSections(sections);
+
+    const sectionsByType: { [type: string]: Section } = {};
+    sections.forEach((section) => {
+      sectionsByType[section.schedule_type] = section;
+    });
+    setSelectedSectionsByType(sectionsByType);
+
+    setEventColors(colors || {});
+    setAssignedColors(savedAssignedColors || {});
+    setIsTimetableLoaded(true);
+
+    if (!opts.silent) {
+      toast.success(`Loaded timetable "${timetable.name}"`);
     }
   };
 
@@ -65,14 +114,11 @@ export function useTimetable(groupedCourses: Course[]) {
         return;
       }
       if (typeof window !== 'undefined') {
-        const crns = selectedSections.map((section) => section.crn);
-        const colors = eventColors;
-        const assigned = assignedColors;
-        const timetableData = {
+        const timetableData: Timetable = {
           name,
-          crns,
-          colors,
-          assignedColors: assigned,
+          crns: selectedSections.map((section) => section.crn),
+          colors: eventColors,
+          assignedColors,
           timestamp: new Date().toISOString(),
         };
 
@@ -94,33 +140,7 @@ export function useTimetable(groupedCourses: Course[]) {
   const loadTimetable = (name: string) => {
     const timetable = timetables.find((tt) => tt.name === name);
     if (timetable) {
-      setCurrentTimetableName(name);
-      const { crns, colors, assignedColors: savedAssignedColors } = timetable;
-
-      const sections: Section[] = [];
-
-      for (const crn of crns) {
-        const section = findSectionByCrn(crn);
-        if (section) {
-          sections.push(section);
-        }
-      }
-
-      setSelectedSections(sections);
-
-      const sectionsByType: { [type: string]: Section } = {};
-      sections.forEach((section) => {
-        const key = section.schedule_type;
-        sectionsByType[key] = section;
-      });
-      setSelectedSectionsByType(sectionsByType);
-
-      setEventColors(colors);
-
-      // Restore assignedColors
-      setAssignedColors(savedAssignedColors || {});
-
-      toast.success(`Loaded timetable "${name}"`);
+      applyTimetable(timetable);
     }
   };
 
@@ -140,7 +160,7 @@ export function useTimetable(groupedCourses: Course[]) {
 
     if (name === currentTimetableName) {
       if (updatedTimetables.length > 0) {
-        loadTimetable(updatedTimetables[0].name);
+        applyTimetable(updatedTimetables[updatedTimetables.length - 1], { silent: true });
       } else {
         createNewTimetable();
       }
@@ -150,7 +170,7 @@ export function useTimetable(groupedCourses: Course[]) {
 
   // Assign a unique color to a course's sections
   const assignColorToSection = (section: Section) => {
-    const courseKey = `${section.subject}-${section.course_number}`;
+    const courseKey = `${section.subject}-${section.course_code || section.course_number}`;
     // Check if any section of this course already has a color
     let existingColor = null;
     for (const color in assignedColors) {
@@ -168,9 +188,7 @@ export function useTimetable(groupedCourses: Course[]) {
     }
 
     // Assign new color
-    const availableColor = eventColorPalette.find(
-      (color) => !(color in assignedColors)
-    );
+    const availableColor = eventColorPalette.find((color) => !(color in assignedColors));
     if (!availableColor) {
       toast.error('All colors are currently in use. Unable to assign a new color.');
       return;
@@ -196,12 +214,11 @@ export function useTimetable(groupedCourses: Course[]) {
       });
       const section = selectedSections.find((s) => s.crn === crn);
       if (section) {
-        const courseKey = `${section.subject}-${section.course_number}`;
         const otherSectionsOfCourse = selectedSections.filter(
           (s) =>
             s.crn !== crn &&
             s.subject === section.subject &&
-            s.course_number === section.course_number &&
+            s.course_code === section.course_code &&
             eventColors[s.crn] === color
         );
         if (otherSectionsOfCourse.length === 0) {

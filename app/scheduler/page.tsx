@@ -8,7 +8,7 @@ import TopBar from '@/components/TopBar';
 import LeftSidebar from '@/components/LeftSidebar';
 import RightSidebar from '@/components/RightSidebar';
 
-import { Toaster, toast } from 'sonner';
+import { toast } from 'sonner';
 
 import CalendarComponent, { CalendarEvent } from '@/components/CalendarComponent';
 
@@ -62,9 +62,11 @@ export default function ScheduleBuilderPage() {
     groupedCourses,
     subjects,
     terms,
+    termOptions,
     selectedTerm,
     setSelectedTerm,
     loading,
+    coursesLoading,
     progressValue,
   } = useCourses();
 
@@ -239,7 +241,7 @@ export default function ScheduleBuilderPage() {
     const newSelectedSections = Object.values(initialSelections);
 
     const filteredPrev = selectedSections.filter(
-      (s) => s.subject !== course.subject || s.course_number !== course.course_number
+      (s) => s.subject !== course.subject || s.course_code !== course.course_code
     );
 
     const hasConflictWithExisting = newSelectedSections.some((newSection) =>
@@ -293,7 +295,7 @@ export default function ScheduleBuilderPage() {
             !(
               s.schedule_type === type &&
               s.subject === selectedSection.subject &&
-              s.course_number === selectedSection.course_number
+              s.course_code === selectedSection.course_code
             )
         );
 
@@ -315,7 +317,7 @@ export default function ScheduleBuilderPage() {
 
       // Provide a toast notification with an undo option
       toast.success(
-        `${selectedSection.subject} ${selectedSection.course_number} - Section ${selectedSection.section} added`,
+        `${selectedSection.subject} ${selectedSection.course_code} - Section ${selectedSection.section} added`,
         {
           action: {
             label: 'Undo',
@@ -355,7 +357,7 @@ export default function ScheduleBuilderPage() {
       let additionalEventColor = '#888'; // Default grey color for labs and tutorials
   
       // Optionally, use the course's color if assigned
-      const courseKey = `${selectedCourse.subject}-${selectedCourse.course_number}`;
+      const courseKey = `${selectedCourse.subject}-${selectedCourse.course_code}`;
       let courseColor = null;
       for (const color in assignedColors) {
         if (assignedColors[color] === courseKey) {
@@ -441,9 +443,9 @@ export default function ScheduleBuilderPage() {
     const section = selectedSections.find((s) => s.crn === crn);
 
     if (section) {
-      const courseKey = `${section.subject}-${section.course_number}`;
+      const courseKey = `${section.subject}-${section.course_code}`;
       const course = groupedCourses.find(
-        (c) => `${c.subject}-${c.course_number}` === courseKey
+        (c) => `${c.subject}-${c.course_code}` === courseKey
       );
 
       if (course) {
@@ -468,7 +470,7 @@ export default function ScheduleBuilderPage() {
     .filter(Boolean);
 
   const filteredCourses = groupedCourses.filter((course) => {
-    const courseString = `${course.subject || ''} ${course.course_number || ''} ${
+    const courseString = `${course.subject || ''} ${course.course_code || ''} ${
       course.course_name || ''
     }`.toLowerCase();
     const matchesSearch = searchWords.every((word) => courseString.includes(word));
@@ -493,7 +495,7 @@ export default function ScheduleBuilderPage() {
     selectedSections.forEach((section) => {
       if (
         section.subject === courseToDelete.subject &&
-        section.course_number === courseToDelete.course_number
+        section.course_code === courseToDelete.course_code
       ) {
         releaseColorOfSection(section.crn);
       }
@@ -503,7 +505,7 @@ export default function ScheduleBuilderPage() {
     const updatedSections = selectedSections.filter(
       (section) =>
         section.subject !== courseToDelete.subject ||
-        section.course_number !== courseToDelete.course_number
+        section.course_code !== courseToDelete.course_code
     );
     setSelectedSections(updatedSections);
 
@@ -513,7 +515,7 @@ export default function ScheduleBuilderPage() {
       const section = updatedSectionsByType[type];
       if (
         section?.subject === courseToDelete.subject &&
-        section?.course_number === courseToDelete.course_number
+        section?.course_code === courseToDelete.course_code
       ) {
         updatedSectionsByType[type] = null;
       }
@@ -523,13 +525,13 @@ export default function ScheduleBuilderPage() {
     // Optionally, update selectedCourse if the deleted course was the selected one
     if (
       selectedCourse?.subject === courseToDelete.subject &&
-      selectedCourse?.course_number === courseToDelete.course_number
+      selectedCourse?.course_code === courseToDelete.course_code
     ) {
       setSelectedCourse(null);
     }
 
     toast.success(
-      `${courseToDelete.subject} ${courseToDelete.course_number} has been removed from your timetable`
+      `${courseToDelete.subject} ${courseToDelete.course_code} has been removed from your timetable`
     );
   };
 
@@ -702,10 +704,13 @@ export default function ScheduleBuilderPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-surface-100 text-black dark:bg-surface-800 dark:text-white">
-        <div className="w-2/3">
-          <p className="mb-4 text-center text-xl">Loading courses...</p>
-          <Progress value={progressValue} className="w-full bg-surface-200 dark:bg-surface-700" />
+      <div className="flex h-screen items-center justify-center bg-background text-foreground">
+        <div className="w-full max-w-sm space-y-4 px-6 text-center">
+          <p className="text-lg font-medium">Loading courses…</p>
+          <Progress value={progressValue} className="w-full" />
+          <p className="text-sm text-muted-foreground">
+            Fetching the latest UVic catalog for this term.
+          </p>
         </div>
       </div>
     );
@@ -713,9 +718,8 @@ export default function ScheduleBuilderPage() {
 
   return (
     <>
-      <Toaster position="top-center" richColors />
       <div
-        className="flex flex-col h-screen overflow-hidden bg-surface-100 text-black dark:bg-surface-800 dark:text-white"
+        className="flex flex-col h-screen overflow-hidden bg-background text-foreground"
         style={{ overflowX: 'hidden' }}
       >
         <TopBar
@@ -733,7 +737,7 @@ export default function ScheduleBuilderPage() {
         >
           {/* Left Sidebar */}
           <div
-            className={`flex-shrink-0 bg-surface-200 dark:bg-surface-700 text-black dark:text-white ${
+            className={`flex-shrink-0 bg-card text-foreground ${
               isMobile
                 ? `transform transition-transform duration-300 ease-in-out ${
                     leftSidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -750,6 +754,8 @@ export default function ScheduleBuilderPage() {
               selectedTerm={selectedTerm}
               setSelectedTerm={setSelectedTerm}
               terms={terms}
+              termOptions={termOptions}
+              coursesLoading={coursesLoading}
               filteredSubjects={filteredSubjects}
               filteredCourses={filteredCourses}
               handleCourseClick={handleCourseClick}
@@ -799,7 +805,7 @@ export default function ScheduleBuilderPage() {
 
           {/* Right Sidebar */}
           <div
-            className={`flex-shrink-0 bg-surface-200 dark:bg-surface-700 text-black dark:text-white ${
+            className={`flex-shrink-0 bg-card text-foreground ${
               isMobile
                 ? `transform transition-transform duration-300 ease-in-out ${
                     rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'
@@ -846,9 +852,9 @@ export default function ScheduleBuilderPage() {
                 }}
               >
                 {leftSidebarOpen ? (
-                  <ChevronLeft className="text-black dark:text-white" />
+                  <ChevronLeft className="text-foreground" />
                 ) : (
-                  <ChevronRight className="text-black dark:text-white" />
+                  <ChevronRight className="text-foreground" />
                 )}
               </div>
 
@@ -863,9 +869,9 @@ export default function ScheduleBuilderPage() {
                 }}
               >
                 {rightSidebarOpen ? (
-                  <ChevronRight className="text-black dark:text-white" />
+                  <ChevronRight className="text-foreground" />
                 ) : (
-                  <ChevronLeft className="text-black dark:text-white" />
+                  <ChevronLeft className="text-foreground" />
                 )}
               </div>
             </>
@@ -902,7 +908,7 @@ export default function ScheduleBuilderPage() {
                 <SelectTrigger id="event-duration">
                   <SelectValue placeholder="Select duration" />
                 </SelectTrigger>
-                <SelectContent className="bg-surface-800">
+                <SelectContent>
                   <SelectItem value="15 minutes">15 minutes</SelectItem>
                   <SelectItem value="30 minutes">30 minutes</SelectItem>
                   <SelectItem value="45 minutes">45 minutes</SelectItem>

@@ -1,110 +1,108 @@
 // tailwind.config.ts
 
-import { nextui } from '@nextui-org/theme';
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
   darkMode: 'class', // Enable dark mode via a CSS class ('dark')
 
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}', // Include all your pages
-    './components/**/*.{js,ts,jsx,tsx,mdx}', // Include all your components
-    './app/**/*.{js,ts,jsx,tsx,mdx}', // Include any app directory files
-    './node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}', // Include NextUI components
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
 
   theme: {
+    container: {
+      center: true,
+      padding: '2rem',
+      screens: {
+        '2xl': '1400px',
+      },
+    },
     extend: {
       colors: {
-        // Surface colors for light and dark themes
-        surface: {
-          // Light Theme Colors
-          100: '#ffffff', // Lightest surface color
-          200: '#f0f0f0', // Slightly darker surface
-          300: '#d0d0d0', // Even darker surface
-          // Dark Theme Colors (used with 'dark:' prefix)
-          700: '#2e2e2e',
-          800: '#121212',
-          900: '#000000',
-        },
-
-        // Text colors
-        'surface-text': {
-          DEFAULT: '#000000', // Text color for light theme
-          dark: '#e8eaed', // Text color for dark theme
-        },
-
-        // Primary color palette
+        // shadcn/ui new-york CSS-variable theme
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
         primary: {
-          100: '#03a9f4',
-          200: '#4ab2f5',
-          300: '#6abcf7',
-          400: '#84c5f8',
-          500: '#9bcefa',
-          600: '#b1d8fb',
-          DEFAULT: '#03a9f4', // Default primary color
-          foreground: '#ffffff', // Text color on primary backgrounds
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
         },
-
-        // Secondary color palette
         secondary: {
-          DEFAULT: '#f5a623',
-          foreground: '#ffffff',
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
         },
-
-        // Muted colors
-        muted: {
-          DEFAULT: '#f5f5f5',
-          dark: '#1e1e1e',
-          foreground: '#888888',
-        },
-
-        // Accent colors
-        accent: {
-          DEFAULT: '#9fa39e',
-          foreground: '#ffffff',
-        },
-
-        // Destructive colors (for errors, warnings)
         destructive: {
-          DEFAULT: '#e3342f',
-          foreground: '#ffffff',
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
         },
 
-        // Miscellaneous colors
-        border: {
-          DEFAULT: '#d0d0d0',
-          dark: '#3f3f3f',
+        // Legacy surface scale (still used across the app) driven by CSS vars
+        surface: {
+          100: 'var(--surface-100)',
+          200: 'var(--surface-200)',
+          300: 'var(--surface-300)',
+          400: 'var(--surface-400)',
+          500: 'var(--surface-500)',
+          600: 'var(--surface-600)',
+          700: 'var(--surface-700)',
+          800: 'var(--surface-800)',
+          900: 'var(--surface-900)',
         },
-        input: {
-          DEFAULT: '#ffffff',
-          dark: '#1e1e1e',
+        'surface-text': {
+          DEFAULT: 'var(--surface-text)',
         },
-        ring: {
-          DEFAULT: '#f5a623',
-          dark: '#f5a623',
-        },
+        'card-hover': 'var(--card-hover)',
       },
 
-      // Define border radius values
       borderRadius: {
-        none: '0',
-        sm: '0.125rem', // 2px
-        DEFAULT: '0.25rem', // 4px
-        md: '0.375rem', // 6px
-        lg: '0.5rem', // 8px
-        xl: '0.75rem', // 12px
-        '2xl': '1rem', // 16px
-        '3xl': '1.5rem', // 24px
-        full: '9999px',
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
 
-      // Removed complex keyframes and animations
-      // Keyframes and animations are now defined in page.css
+      keyframes: {
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
+        },
+        'gradient-shift': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+      },
+      animation: {
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
+        'gradient-shift': 'gradient-shift 12s ease infinite',
+      },
     },
   },
 
-  plugins: [require('tailwindcss-animate'), nextui()],
+  plugins: [require('tailwindcss-animate')],
 };
 
 export default config;

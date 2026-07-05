@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "sync": "tsx scripts/sync-banner.ts"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.15",
@@ -14,10 +15,6 @@
     "@fullcalendar/react": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
     "@google-ai/generativelanguage": "^2.7.0",
-    "@nextui-org/card": "^2.0.34",
-    "@nextui-org/react": "^2.4.7",
-    "@nextui-org/system": "^2.2.6",
-    "@nextui-org/theme": "^2.2.10",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-avatar": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.2",
@@ -39,8 +36,6 @@
     "@types/react-resizable": "^3.0.8",
     "@vercel/analytics": "^1.3.1",
     "@vercel/speed-insights": "^1.0.12",
-    "axios": "^1.7.7",
-    "cheerio": "^1.0.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
@@ -50,7 +45,7 @@
     "ics": "^3.8.0",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.439.0",
-    "mongodb": "^6.9.0",
+    "mongodb": "^6.21.0",
     "next": "14.2.8",
     "next-themes": "^0.3.0",
     "pdf-parse": "^1.1.1",
@@ -67,13 +62,14 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@types/cheerio": "^0.22.35",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-big-calendar": "^1.8.12",
     "@types/react-dom": "^18",
+    "dotenv": "^16.4.5",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.19.1",
     "typescript": "^5"
   }
 }

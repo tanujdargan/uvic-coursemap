@@ -119,7 +119,7 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
   const ColoredDateCellWrapper = ({ children }: any) =>
     React.cloneElement(React.Children.only(children), {
       style: {
-        backgroundColor: '#202124',
+        backgroundColor: 'var(--surface-100)',
       },
     });
 
