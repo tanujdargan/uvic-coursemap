@@ -20,6 +20,7 @@ loadEnv({ path: path.resolve(process.cwd(), '.env.local') });
 
 import { MongoClient } from 'mongodb';
 import {
+  getTerms,
   fetchTermCatalogRaw,
   mapBannerSection,
   getFacultyMeetingTimes,
@@ -38,6 +39,7 @@ import { MONGO_DB_NAME, SECTIONS_COLLECTION } from '../lib/mongodb';
 function parseArgs(argv: string[]) {
   let term: string | undefined;
   let skipInstructors = false;
+  let allActive = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--term') {
@@ -46,9 +48,11 @@ function parseArgs(argv: string[]) {
       term = a.slice('--term='.length);
     } else if (a === '--skip-instructors') {
       skipInstructors = true;
+    } else if (a === '--all-active') {
+      allActive = true;
     }
   }
-  return { term, skipInstructors };
+  return { term, skipInstructors, allActive };
 }
 
 // ---------------------------------------------------------------------------
@@ -118,34 +122,11 @@ async function withRetry<T>(
 // Main
 // ---------------------------------------------------------------------------
 
-async function main() {
-  const { term, skipInstructors } = parseArgs(process.argv.slice(2));
-
-  if (!term) {
-    console.error('Usage: npx tsx scripts/sync-banner.ts --term 202609 [--skip-instructors]');
-    process.exit(1);
-  }
-
-  // Fail loudly & early if the connection string is missing.
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    console.error(
-      '\nMONGODB_URI is not set. Add it to .env.local to sync the catalog ' +
-        'into MongoDB (Course-Data.sections).\n'
-    );
-    process.exit(1);
-  }
-
-  const client = new MongoClient(uri);
-  await client.connect();
-  const collection = client
-    .db(MONGO_DB_NAME)
-    .collection(SECTIONS_COLLECTION);
-
-  // Ensure indexes (createIndex is idempotent).
-  await collection.createIndex({ term: 1, crn: 1 }, { unique: true });
-  await collection.createIndex({ term: 1, subject: 1 });
-
+async function syncTerm(
+  collection: import('mongodb').Collection,
+  term: string,
+  skipInstructors: boolean
+) {
   console.log(`\nSyncing term ${term}${skipInstructors ? ' (skip instructors)' : ''}...`);
 
   console.log('Fetching full catalog from Banner...');
@@ -191,25 +172,82 @@ async function main() {
   console.log(`Upserting ${rows.length} rows to Mongo (batches of 500)...`);
   const BATCH = 500;
   let upserted = 0;
+  for (let i = 0; i < rows.length; i += BATCH) {
+    const batch = rows.slice(i, i + BATCH);
+    const ops = batch.map((row) => ({
+      updateOne: {
+        filter: { term: row.term, crn: row.crn },
+        update: { $set: row },
+        upsert: true,
+      },
+    }));
+    await collection.bulkWrite(ops, { ordered: false });
+    upserted += batch.length;
+    console.log(`  upserted ${upserted}/${rows.length}`);
+  }
+
+  console.log(`\nDone. Synced ${upserted} sections for term ${term}.\n`);
+}
+
+async function main() {
+  const { term, skipInstructors, allActive } = parseArgs(process.argv.slice(2));
+
+  if (!term && !allActive) {
+    console.error(
+      'Usage: npx tsx scripts/sync-banner.ts --term 202609 [--skip-instructors]\n' +
+        '       npx tsx scripts/sync-banner.ts --all-active [--skip-instructors]'
+    );
+    process.exit(1);
+  }
+
+  // Fail loudly & early if the connection string is missing.
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    console.error(
+      '\nMONGODB_URI is not set. Add it to .env.local to sync the catalog ' +
+        'into MongoDB (Course-Data.sections).\n'
+    );
+    process.exit(1);
+  }
+
+  // Resolve the term list: explicit --term, or every non-view-only term.
+  let termsToSync: string[];
+  if (allActive) {
+    const terms = await getTerms();
+    termsToSync = terms
+      .filter((t) => !/view only/i.test(t.description))
+      .map((t) => t.code);
+    console.log(`Active terms: ${termsToSync.join(', ')}`);
+  } else {
+    termsToSync = [term as string];
+  }
+
+  const client = new MongoClient(uri);
+  await client.connect();
+  const collection = client.db(MONGO_DB_NAME).collection(SECTIONS_COLLECTION);
+
+  // Ensure indexes (createIndex is idempotent).
+  await collection.createIndex({ term: 1, crn: 1 }, { unique: true });
+  await collection.createIndex({ term: 1, subject: 1 });
+
+  const failed: string[] = [];
   try {
-    for (let i = 0; i < rows.length; i += BATCH) {
-      const batch = rows.slice(i, i + BATCH);
-      const ops = batch.map((row) => ({
-        updateOne: {
-          filter: { term: row.term, crn: row.crn },
-          update: { $set: row },
-          upsert: true,
-        },
-      }));
-      await collection.bulkWrite(ops, { ordered: false });
-      upserted += batch.length;
-      console.log(`  upserted ${upserted}/${rows.length}`);
+    for (const t of termsToSync) {
+      try {
+        await syncTerm(collection, t, skipInstructors);
+      } catch (e) {
+        console.error(`Sync failed for term ${t}:`, e);
+        failed.push(t);
+      }
     }
   } finally {
     await client.close();
   }
 
-  console.log(`\nDone. Synced ${upserted} sections for term ${term}.\n`);
+  if (failed.length) {
+    console.error(`\nFailed terms: ${failed.join(', ')}`);
+    process.exit(1);
+  }
 }
 
 main().catch((e) => {

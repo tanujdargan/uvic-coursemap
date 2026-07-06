@@ -1,0 +1,39 @@
+name: Sync Banner catalog
+
+on:
+  schedule:
+    # 09:17 UTC daily = ~1:17am Pacific (off the hour to avoid GH's cron rush)
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+    inputs:
+      term:
+        description: 'Single term to sync (e.g. 202609); leave empty for all active terms'
+        required: false
+
+concurrency:
+  group: sync-banner
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Sync catalog into MongoDB
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          if [ -n "${{ inputs.term }}" ]; then
+            npx tsx scripts/sync-banner.ts --term "${{ inputs.term }}"
+          else
+            npx tsx scripts/sync-banner.ts --all-active
+          fi
