@@ -76,8 +76,11 @@ Contributions are encouraged and appreciated! If you would like to contribute, f
 5. Open a pull request for review.
 
 Please ensure that your code adheres to the existing code style and passes all linting and formatting checks before submitting a pull request.
-You may face issues with fetching data for the pages since you need an API key. Feel free to reach out to me to get access to one!
-(Checkout my profile for ways to contact me)
+
+No API keys are required to run the site — without any env vars it serves live Banner 9 data directly. Optional env vars in `.env.local`:
+
+- `MONGODB_URI` — enables the MongoDB catalog cache (faster loads + instructor names/locations via `npm run sync`).
+- `RMP_AUTH_TOKEN` — enables RateMyProfessors ratings (basic auth token for their GraphQL API).
 
 ## Run Locally
 
