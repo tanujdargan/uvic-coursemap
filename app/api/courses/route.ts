@@ -19,6 +19,9 @@ import { getCourseDataDb, SECTIONS_COLLECTION } from '@/lib/mongodb';
 export const runtime = 'nodejs';
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
+// The live-Banner fallback for an unsynced term walks the full paged catalog
+// (~30s) — without this, Vercel's default function timeout 504s mid-fetch.
+export const maxDuration = 60;
 
 // Row shape as stored in Mongo (subset used to build a Section). term/crn are
 // stored as numbers by the sync script but tolerated as strings for safety.
